@@ -114,5 +114,6 @@ export const CONTRACT_ABIS = {
     'function subscribe(uint8 _tier) external',
     'function cancelSubscription() external',
     'function getUserTier(address _user) view returns (uint8)',
+    'function getRemainingTransactions(address _user) view returns (uint256)',
   ],
 };

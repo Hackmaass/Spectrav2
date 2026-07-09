@@ -47,6 +47,15 @@ async function main() {
   const spectraExchangeAddress = await spectraExchange.getAddress();
   console.log("4. SpectraExchange deployed to:", spectraExchangeAddress);
 
+  await sleep(3000);
+
+  // 5. Deploy SpectraProfile
+  const SpectraProfile = await hre.ethers.getContractFactory("SpectraProfile");
+  const spectraProfile = await SpectraProfile.deploy();
+  await spectraProfile.waitForDeployment();
+  const spectraProfileAddress = await spectraProfile.getAddress();
+  console.log("5. SpectraProfile deployed to:", spectraProfileAddress);
+
   // Output all deployed addresses to a JSON file
   const addresses = {
     network: hre.network.name,
@@ -54,6 +63,7 @@ async function main() {
     spectraSaaS: spectraSaaSAddress,
     spectraNFT: spectraNFTAddress,
     spectraExchange: spectraExchangeAddress,
+    spectraProfile: spectraProfileAddress,
     deployer: deployer.address,
     timestamp: new Date().toISOString()
   };

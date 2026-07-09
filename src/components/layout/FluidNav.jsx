@@ -1,7 +1,8 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useTheme } from '../../context/ThemeContext';
+import { User } from 'lucide-react';
+import LoginModal from '../auth/LoginModal';
 
 /* ─── Styled Components ──────────────────────────────────────────────────────── */
 
@@ -74,29 +75,51 @@ const NavLink = styled(Link)`
 const NavRight = styled.div`
   display: flex;
   align-items: center;
+  gap: 16px;
 `;
 
-const ContrastButton = styled.button`
+const ProfileIcon = styled.button`
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-primary);
-  background: none;
-  border: none;
   cursor: pointer;
-  padding: 4px;
-  line-height: 1;
-  transition: transform 0.1s ease;
+  overflow: hidden;
+  transition: all 0.2s;
 
-  &:active {
-    transform: scale(0.95);
+  &:hover {
+    border-color: var(--color-primary);
   }
 
-  .material-symbols-outlined {
-    font-size: 22px;
-    color: var(--color-primary);
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 `;
+
+const AuthButton = styled.button`
+  background: transparent;
+  border: none;
+  color: ${({ $isGhost }) => $isGhost ? 'var(--color-secondary)' : 'var(--color-primary)'};
+  font-family: 'Geist', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.2s;
+
+  &:hover {
+    color: ${({ $isGhost }) => $isGhost ? '#ef4444' : 'var(--color-primary)'};
+  }
+`;
+
+import { useAuth } from '../../context/AuthContext';
 
 /* ─── Component ──────────────────────────────────────────────────────────────── */
 const NAV_LINKS = [
@@ -109,10 +132,28 @@ const NAV_LINKS = [
 
 export default function FluidNav() {
   const location = useLocation();
-  const { toggleTheme } = useTheme();
+  const navigate = useNavigate();
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const { isLoggedIn, walletAddress, login, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+  };
+
+  // We will load avatarId from smart contract eventually, but for now we default to 1 if logged in
+  const userData = { avatarId: 1 };
+
+  const handleProfileClick = () => {
+    if (isLoggedIn) {
+      navigate('/profile');
+    } else {
+      setIsModalOpen(true);
+    }
+  };
 
   return (
-    <NavWrap>
+    <>
+      <NavWrap>
       <NavInner>
         <Logo to="/">SPECTRA</Logo>
 
@@ -128,15 +169,26 @@ export default function FluidNav() {
         </NavLinks>
 
         <NavRight>
-          <ContrastButton
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-            title="Toggle light/dark theme"
-          >
-            <span className="material-symbols-outlined">contrast</span>
-          </ContrastButton>
+          <ProfileIcon onClick={handleProfileClick}>
+            {isLoggedIn ? (
+              <img src={`/profile/${userData.avatarId}.png`} alt="Profile" onError={(e) => { e.target.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + userData.avatarId; }} />
+            ) : (
+              <User size={18} color="var(--color-secondary)" />
+            )}
+          </ProfileIcon>
+          {isLoggedIn ? (
+            <AuthButton $isGhost onClick={handleLogout}>Logout</AuthButton>
+          ) : (
+            <AuthButton onClick={() => setIsModalOpen(true)}>Login</AuthButton>
+          )}
         </NavRight>
       </NavInner>
     </NavWrap>
+    <LoginModal 
+      isOpen={isModalOpen} 
+      onClose={() => setIsModalOpen(false)} 
+      onLogin={login} 
+    />
+    </>
   );
 }

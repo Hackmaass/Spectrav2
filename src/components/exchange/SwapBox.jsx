@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ethers } from 'ethers';
 import { useUGF } from '../../hooks/useUGF';
+import { useAuth } from '../../context/AuthContext';
 import { CONTRACT_ABIS, CONTRACT_ADDRESSES, TOKEN_ADDRESSES, resolveTokenAddress, resolveTokenLabel, ensureBaseSepolia } from '../../config/contracts.js';
 
 const ERC20_ABI = [
@@ -28,7 +29,8 @@ export default function SwapBox({
   onTxHashChange,
   onError,
 }) {
-  const [account, setAccount] = useState('');
+  const { walletAddress, connectWallet } = useAuth();
+  const account = walletAddress;
   const [ethBalance, setEthBalance] = useState(ZERO);
   const [paymentTokenBalance, setPaymentTokenBalance] = useState(ZERO);
   const [rawPaymentTokenBalance, setRawPaymentTokenBalance] = useState('0');
@@ -95,53 +97,34 @@ export default function SwapBox({
     onPayAmountChange(rawPaymentTokenBalance);
   };
 
-  const connectWallet = async () => {
+  const connectWalletLocal = async () => {
     if (!window.ethereum) {
       throw new Error('No injected wallet found.');
     }
 
     await ensureBaseSepolia();
-
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    if (!accounts?.length) {
-      throw new Error('Wallet returned no accounts.');
-    }
-
+    const addr = await connectWallet();
     const provider = new ethers.BrowserProvider(window.ethereum);
-    setAccount(accounts[0]);
-    await fetchBalances(provider, accounts[0]);
-    return { provider, account: accounts[0] };
+    await fetchBalances(provider, addr);
+    return { provider, account: addr };
   };
 
   useEffect(() => {
     const hydrate = async () => {
-      if (!window.ethereum) return;
+      if (!window.ethereum || !walletAddress) return;
       const provider = new ethers.BrowserProvider(window.ethereum);
-      const accounts = await provider.send('eth_accounts', []);
-      if (accounts?.length) {
-        setAccount(accounts[0]);
-        await fetchBalances(provider, accounts[0]);
-      }
+      await fetchBalances(provider, walletAddress);
     };
 
-    hydrate().catch((error) => console.warn('[SwapBox] Hydration failed:', error));
-
-    if (!window.ethereum) return undefined;
-
-    const handleAccountsChanged = (accounts) => {
-      if (!accounts?.length) {
-        setAccount('');
-        setEthBalance(ZERO);
-        setPaymentTokenBalance(ZERO);
-        setSelectedAssetBalance(ZERO);
-      } else {
-        hydrate().catch((error) => console.warn('[SwapBox] Re-hydration failed:', error));
-      }
-    };
-
-    window.ethereum.on('accountsChanged', handleAccountsChanged);
-    return () => window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
-  }, [activePayAsset, activeAsset]);
+    if (walletAddress) {
+      hydrate().catch((error) => console.warn('[SwapBox] Hydration failed:', error));
+    } else {
+      setEthBalance(ZERO);
+      setPaymentTokenBalance(ZERO);
+      setSelectedAssetBalance(ZERO);
+      setRawPaymentTokenBalance('0');
+    }
+  }, [walletAddress, activePayAsset, activeAsset]);
 
   const handleExecuteSwap = async () => {
     if (isExecutingState || sdkLoading) return;
@@ -164,7 +147,7 @@ export default function SwapBox({
         throw new Error('Pay and Receive assets must be different.');
       }
 
-      const { provider } = await connectWallet();
+      const { provider } = await connectWalletLocal();
       const signer = await provider.getSigner();
       
       const decimalsIn = activePayAssetMeta.decimals;
@@ -237,7 +220,7 @@ export default function SwapBox({
 
   const handleConnect = async () => {
     try {
-      await connectWallet();
+      await connectWalletLocal();
       setExecutionError('');
     } catch (connectError) {
       setExecutionError(connectError?.message || 'Wallet connection failed.');

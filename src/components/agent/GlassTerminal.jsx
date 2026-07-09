@@ -4,6 +4,7 @@ import { ethers } from 'ethers';
 import { tryParseDefiIntent } from '../../api/sarvamAgent.js';
 import { CONTRACT_ABIS, CONTRACT_ADDRESSES, TOKEN_ADDRESSES, resolveTokenAddress } from '../../config/contracts.js';
 import { useUGF } from '../../hooks/useUGF';
+import { useAuth } from '../../context/AuthContext';
 
 const Card = styled.section`
   width: 100%;
@@ -550,12 +551,14 @@ function buildTypedData(intent, chainId) {
 
 export default function GlassTerminal() {
   const { execute, loading: sdkLoading, error: sdkError, step: sdkStep } = useUGF();
+  const { walletAddress, connectWallet } = useAuth();
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
   const [intent, setIntent] = useState(null);
-  const [walletAddress, setWalletAddress] = useState('');
+  const [userTier, setUserTier] = useState(0);
+  const [remainingTxs, setRemainingTxs] = useState(10);
   const [walletEthBalance, setWalletEthBalance] = useState('0.0000');
   const [walletUsdBalance, setWalletUsdBalance] = useState('0.00');
   const [walletUsdcBalance, setWalletUsdcBalance] = useState('0.00');
@@ -659,32 +662,19 @@ export default function GlassTerminal() {
 
   const handleConnectWallet = async () => {
     try {
-      if (!window.ethereum) {
-        throw new Error('No injected wallet found. Install MetaMask or a compatible wallet.');
-      }
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      if (accounts?.length) {
-        setWalletAddress(accounts[0]);
-        await hydrateWallet();
-      }
+      await connectWallet();
     } catch (err) {
       setError(err.message || 'Failed to connect wallet.');
     }
   };
 
   const hydrateWallet = async () => {
-    if (!window.ethereum) {
+    if (!window.ethereum || !walletAddress) {
       return;
     }
 
     const provider = new ethers.BrowserProvider(window.ethereum);
-    const accounts = await provider.send('eth_accounts', []);
-    if (!accounts?.length) {
-      return;
-    }
-
-    const account = accounts[0];
-    setWalletAddress(account);
+    const account = walletAddress;
 
     try {
       const ethRaw = await provider.getBalance(account).catch(() => 0n);
@@ -731,11 +721,27 @@ export default function GlassTerminal() {
         console.warn('[GlassTerminal] Failed to fetch USDC balance:', e);
       }
 
+      let tier = 0;
+      let remaining = 10;
+      try {
+        const saasContract = new ethers.Contract(
+          CONTRACT_ADDRESSES.SPECTRA_SAAS,
+          CONTRACT_ABIS.SPECTRA_SAAS,
+          provider
+        );
+        tier = Number(await saasContract.getUserTier(account));
+        remaining = Number(await saasContract.getRemainingTransactions(account));
+      } catch (e) {
+        console.warn('[GlassTerminal] Failed to fetch SaaS details:', e);
+      }
+
       setWalletEthBalance(Number(ethers.formatEther(ethRaw)).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 }));
       setWalletUsdBalance(Number(ethers.formatUnits(musdRaw, musdDecimals)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
       setWalletAllowance(Number(ethers.formatUnits(allowanceRaw, musdDecimals)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
       setWalletUsdcBalance(Number(ethers.formatUnits(usdcRaw, usdcDecimals)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
       setWalletNonce(txCount || 0);
+      setUserTier(tier);
+      setRemainingTxs(remaining);
     } catch (err) {
       console.warn('[GlassTerminal] Error in hydrateWallet:', err);
     }
@@ -767,19 +773,18 @@ export default function GlassTerminal() {
   };
 
   useEffect(() => {
-    hydrateWallet().catch(() => undefined);
-
-    if (!window.ethereum) {
-      return undefined;
-    }
-
-    const handleAccountsChanged = () => {
+    if (walletAddress) {
       hydrateWallet().catch(() => undefined);
-    };
-
-    window.ethereum.on('accountsChanged', handleAccountsChanged);
-    return () => window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
-  }, []);
+    } else {
+      setWalletEthBalance('0.0000');
+      setWalletUsdBalance('0.00');
+      setWalletUsdcBalance('0.00');
+      setWalletNonce(0);
+      setWalletAllowance('0.00');
+      setUserTier(0);
+      setRemainingTxs(10);
+    }
+  }, [walletAddress]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -794,6 +799,39 @@ export default function GlassTerminal() {
 
     const userPrompt = inputValue.trim();
     pushMessage('user', userPrompt);
+
+    if (!walletAddress) {
+      const anonUsage = Number(localStorage.getItem('spectra_anon_usage') || '0');
+      if (anonUsage >= 1) {
+        pushMessage('agent', '[TRIAL_LIMIT_EXCEEDED] Please connect your wallet and authenticate to access the free Alpha tier.');
+        setInputValue('');
+        setIsLoading(false);
+        return;
+      }
+      localStorage.setItem('spectra_anon_usage', (anonUsage + 1).toString());
+    } else {
+      const today = new Date().toDateString();
+      const usageKey = `spectra_usage_${walletAddress}`;
+      const usageData = JSON.parse(localStorage.getItem(usageKey) || '{"count":0,"date":""}');
+      if (usageData.date !== today) {
+        usageData.count = 0;
+        usageData.date = today;
+      }
+      
+      const limit = userTier === 1 ? 15 : (userTier === 2 ? 30 : 10);
+      const tierName = userTier === 1 ? 'VECTOR' : (userTier === 2 ? 'NEXUS' : 'ALPHA');
+      
+      if (usageData.count >= limit || remainingTxs <= 0) {
+        pushMessage('agent', `[TRIAL_LIMIT_EXCEEDED] Daily limit of ${limit} queries reached for ${tierName} tier. Please upgrade your subscription on the Mint page.`);
+        setInputValue('');
+        setIsLoading(false);
+        return;
+      }
+      
+      usageData.count++;
+      localStorage.setItem(usageKey, JSON.stringify(usageData));
+      setRemainingTxs(prev => Math.max(0, prev - 1));
+    }
 
     try {
       const context = walletAddress

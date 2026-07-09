@@ -43,12 +43,12 @@ contract SpectraSaaS is Ownable, ReentrancyGuard {
     constructor(address _mockUSD) Ownable(msg.sender) {
         mockUSD = IERC20(_mockUSD);
 
-        // Alpha Tier: Free, 20 tx/day
-        tiers[PlanTier.ALPHA] = TierInfo(20, 0, false);
-        // Vector Tier: $15, 60 tx/day
-        tiers[PlanTier.VECTOR] = TierInfo(60, 15 * 10**6, true);
-        // Nexus Tier: $49, 100 tx/day
-        tiers[PlanTier.NEXUS] = TierInfo(100, 49 * 10**6, true);
+        // Alpha Tier: Free, 10 tx/day
+        tiers[PlanTier.ALPHA] = TierInfo(10, 0, false);
+        // Vector Tier: $15, 15 tx/day
+        tiers[PlanTier.VECTOR] = TierInfo(15, 15 * 10**6, true);
+        // Nexus Tier: $49, 30 tx/day
+        tiers[PlanTier.NEXUS] = TierInfo(30, 49 * 10**6, true);
     }
 
     /**

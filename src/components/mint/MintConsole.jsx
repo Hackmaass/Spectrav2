@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { useUGF } from '../../hooks/useUGF';
+import { useAuth } from '../../context/AuthContext';
 import { CONTRACT_ABIS, CONTRACT_ADDRESSES, TOKEN_ADDRESSES } from '../../config/contracts.js';
 
 const ERC20_ABI = [
@@ -20,7 +21,7 @@ const TIERS = [
     badge: '/1.png',
     spline: '/1.mp4',
     description: 'Read-only terminal access and public data feeds.',
-    features: ['Read-only terminal access', 'Public data feeds', 'Agent deployment'],
+    features: ['Read-only terminal access', 'Public data feeds', '10 Daily Agent Usages'],
   },
   {
     id: 'vector',
@@ -31,7 +32,7 @@ const TIERS = [
     badge: '/2.png',
     spline: '/2.mp4',
     description: 'Standard terminal access with private data channels.',
-    features: ['Standard terminal access', 'Private data channels', '1 Concurrent Agent'],
+    features: ['Standard terminal access', 'Private data channels', '15 Daily Agent Usages'],
   },
   {
     id: 'nexus',
@@ -42,7 +43,7 @@ const TIERS = [
     badge: '/3.png',
     spline: '/3.mp4',
     description: 'Root terminal access with unlimited data pipelines.',
-    features: ['Root terminal access', 'Unlimited data pipelines', 'Infinite Agent swarm'],
+    features: ['Root terminal access', 'Unlimited data pipelines', '30 Daily Agent Usages'],
   },
 ];
 
@@ -58,7 +59,8 @@ export default function MintConsole() {
   const [txHash, setTxHash] = useState('');
   const [userTier, setUserTier] = useState(-1);
   const [ownedTokenId, setOwnedTokenId] = useState(0);
-  const [account, setAccount] = useState('');
+  const { walletAddress, connectWallet } = useAuth();
+  const account = walletAddress;
 
   const { execute, loading: sdkLoading, step: sdkStep } = useUGF();
 
@@ -132,54 +134,33 @@ export default function MintConsole() {
     }
   };
 
-  const connectWallet = async () => {
+  const connectWalletLocal = async () => {
     if (!window.ethereum) {
       throw new Error('No injected wallet found.');
     }
 
     await ensureBaseSepolia();
-
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    if (!accounts?.length) {
-      throw new Error('Wallet returned no accounts.');
-    }
-
+    const addr = await connectWallet();
     const provider = new ethers.BrowserProvider(window.ethereum);
-    setAccount(accounts[0]);
-    await fetchBalances(provider, accounts[0]);
-    return { provider, account: accounts[0] };
+    await fetchBalances(provider, addr);
+    return { provider, account: addr };
   };
 
   useEffect(() => {
     const hydrate = async () => {
-      if (!window.ethereum) return;
+      if (!window.ethereum || !walletAddress) return;
       const provider = new ethers.BrowserProvider(window.ethereum);
-      const accounts = await provider.send('eth_accounts', []);
-      if (accounts?.length) {
-        setAccount(accounts[0]);
-        await fetchBalances(provider, accounts[0]);
-      }
+      await fetchBalances(provider, walletAddress);
     };
-    hydrate().catch(e => console.warn('[MintConsole] Hydration failed:', e));
-    
-    if (!window.ethereum) return undefined;
-    
-    const handleAccountsChanged = (accounts) => {
-      if (!accounts?.length) {
-        setAccount('');
-        setEthBalance(ZERO);
-        setMockUsdBalance(ZERO);
-        setUserTier(-1);
-        setOwnedTokenId(0);
-      } else {
-        setAccount(accounts[0]);
-        hydrate().catch(e => console.warn('[MintConsole] Re-hydration failed:', e));
-      }
-    };
-    
-    window.ethereum.on('accountsChanged', handleAccountsChanged);
-    return () => window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
-  }, []);
+    if (walletAddress) {
+      hydrate().catch(e => console.warn('[MintConsole] Hydration failed:', e));
+    } else {
+      setEthBalance(ZERO);
+      setMockUsdBalance(ZERO);
+      setUserTier(-1);
+      setOwnedTokenId(0);
+    }
+  }, [walletAddress]);
 
   const handleMint = async () => {
     if (isMinting || sdkLoading) return;
@@ -195,7 +176,7 @@ export default function MintConsole() {
       }
 
       setStatus('CONNECTING');
-      const { provider } = await connectWallet();
+      const { provider } = await connectWalletLocal();
       const signer = await provider.getSigner();
 
       // Step 1: Manual Approval for SaaS Contract (Subscription Fee)
@@ -260,7 +241,7 @@ export default function MintConsole() {
     setStatus('CANCELLING');
 
     try {
-      const { provider } = await connectWallet();
+      const { provider } = await connectWalletLocal();
       const signer = await provider.getSigner();
 
       // Step 1: Cancel subscription on SaaS Contract
