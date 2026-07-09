@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SPECTRA - Autonomous Yield</title>
+<!-- Google Fonts: Poppins & Geist -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;600&amp;family=Poppins:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#5d5f5f",
+                        "on-tertiary": "#ffffff",
+                        "surface-container": "#eeeeee",
+                        "surface": "#f9f9f9",
+                        "on-tertiary-fixed-variant": "#474747",
+                        "inverse-on-surface": "#f1f1f1",
+                        "on-surface": "#1b1b1b",
+                        "surface-tint": "#5e5e5e",
+                        "on-surface-variant": "#4c4546",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed-variant": "#474747",
+                        "surface-bright": "#f9f9f9",
+                        "secondary-fixed": "#e2e2e2",
+                        "on-tertiary-container": "#848484",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed": "#e2e2e2",
+                        "secondary-container": "#dfe0e0",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#454747",
+                        "outline-variant": "#cfc4c5",
+                        "surface-variant": "#e2e2e2",
+                        "on-primary": "#ffffff",
+                        "outline": "#7e7576",
+                        "on-secondary-fixed": "#1a1c1c",
+                        "primary-fixed": "#e2e2e2",
+                        "surface-container-highest": "#e2e2e2",
+                        "surface-container-low": "#f3f3f3",
+                        "inverse-surface": "#303030",
+                        "on-error": "#ffffff",
+                        "on-secondary-container": "#616363",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed": "#1b1b1b",
+                        "background": "#ffffff", /* Explicitly white for stark contrast */
+                        "on-primary-container": "#848484",
+                        "surface-dim": "#dadada",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-container": "#1b1b1b",
+                        "primary-fixed-dim": "#c6c6c6",
+                        "inverse-primary": "#c6c6c6",
+                        "on-tertiary-fixed": "#1b1b1b",
+                        "surface-container-high": "#e8e8e8",
+                        "tertiary": "#000000",
+                        "tertiary-fixed-dim": "#c6c6c6",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "on-background": "#000000", /* Explicitly black */
+                        "primary": "#000000",
+                        "primary-container": "#1b1b1b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0px", /* Strict minimalist edges */
+                        "lg": "0px",
+                        "xl": "0px",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "64px",
+                        "margin-mobile": "24px",
+                        "container-max": "1440px",
+                        "unit": "4px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Poppins", "sans-serif"],
+                        "body-lg": ["Poppins", "sans-serif"],
+                        "headline-lg": ["Poppins", "sans-serif"],
+                        "headline-md": ["Poppins", "sans-serif"],
+                        "data-mono": ["Geist", "monospace"],
+                        "label-caps": ["Geist", "monospace"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", { "lineHeight": "1.6", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "1.6", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "headline-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+                        "data-mono": ["12px", { "lineHeight": "1.4", "letterSpacing": "0.02em", "fontWeight": "400" }],
+                        "label-caps": ["11px", { "lineHeight": "1.2", "letterSpacing": "0.1em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Strict Minimalism Overrides & Utilities */
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Material Icon Base Class Integration */
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+            -webkit-text-stroke: 0.5px currentColor; 
+        }
+
+        /* Scroll Reveal Animation Classes */
+        .reveal-item {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .reveal-item.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .delay-100 { transition-delay: 100ms; }
+        .delay-200 { transition-delay: 200ms; }
+        .delay-300 { transition-delay: 300ms; }
+
+        .hero-text-scale {
+            font-size: clamp(3rem, 8vw, 7rem);
+            line-height: 1;
+            letter-spacing: -0.03em;
+        }
+
+        /* Geometric Dot Pattern Background */
+        .bg-dots {
+            background-image: radial-gradient(theme('colors.secondary-fixed-dim') 1px, transparent 1px);
+            background-size: 24px 24px;
+            background-position: 0 0;
+        }
+        
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, theme('colors.surface-container') 1px, transparent 1px),
+                linear-gradient(to bottom, theme('colors.surface-container') 1px, transparent 1px);
+        }
+
+        /* Terminal animation */
+        @keyframes scrollUp {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-50%); }
+        }
+        .terminal-scroll {
+            animation: scrollUp 20s linear infinite;
+        }
+        .terminal-scroll:hover {
+            animation-play-state: paused;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative overflow-x-hidden selection:bg-primary selection:text-on-primary">
+<!-- TopNavBar -->
+<nav class="fixed top-6 left-1/2 -translate-x-1/2 border border-primary px-6 py-3 bg-background flex items-center justify-between w-full max-w-5xl mx-auto z-50 transition-transform duration-200">
+<div class="flex items-center gap-8 w-full justify-between">
+<span class="text-label-caps font-label-caps uppercase tracking-widest text-primary">SPECTRA</span>
+<div class="hidden md:flex items-center gap-8">
+<a class="text-label-caps font-label-caps text-primary uppercase border-b border-primary pb-0.5" href="#">Home</a>
+<a class="text-label-caps font-label-caps text-secondary uppercase hover:text-primary transition-colors duration-200" href="#">Exchange</a>
+<a class="text-label-caps font-label-caps text-secondary uppercase hover:text-primary transition-colors duration-200" href="/agent">Agent</a>
+<a class="text-label-caps font-label-caps text-secondary uppercase hover:text-primary transition-colors duration-200" href="#">NFT Minting</a>
+<a class="text-label-caps font-label-caps text-secondary uppercase hover:text-primary transition-colors duration-200" href="#">About</a>
+</div>
+<div class="flex items-center">
+<button aria-label="Contrast Action" class="flex items-center justify-center scale-98 active:scale-95 transition-transform text-primary hover:text-primary">
+<span class="material-symbols-outlined" data-icon="contrast">contrast</span>
+</button>
+</div>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-grow flex flex-col w-full max-w-[1440px] mx-auto px-margin-mobile md:px-margin-desktop">
+<!-- Cinematic Hero Section -->
+<section class="min-h-[90vh] flex flex-col items-center justify-center text-center pt-32 pb-16 relative bg-dots">
+<!-- System Status Indicator -->
+<div class="absolute top-32 left-margin-mobile md:left-margin-desktop flex items-center gap-2 border border-primary px-3 py-1 bg-background z-20">
+<div class="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+<span class="font-data-mono text-[10px] uppercase text-primary tracking-widest">System Online</span>
+</div>
+<div class="z-10 max-w-5xl flex flex-col items-center gap-8 reveal-item is-visible bg-background/80 p-8 md:p-16 backdrop-blur-sm border border-primary/10">
+<h1 class="font-headline-lg hero-text-scale text-primary uppercase tracking-tighter">
+                    Autonomous Yield.<br/>
+                    Zero Gas.
+                </h1>
+<p class="font-data-mono text-data-mono text-secondary max-w-lg mt-2">
+                    [ SYSTEM_STATUS: READY ] INITIALIZING PROTOCOL FOR ADVANCED ON-CHAIN EXECUTION.
+                </p>
+<div class="flex gap-4 mt-6">
+<a class="px-8 py-4 border border-primary bg-background text-primary font-label-caps text-label-caps uppercase hover:bg-primary hover:text-background transition-colors duration-300 inline-flex items-center gap-2 group" href="/agent">
+                        Initialize Agent
+                        <span class="material-symbols-outlined transform group-hover:translate-x-1 transition-transform" data-icon="arrow_forward">arrow_forward</span>
+</a>
+</div>
+</div>
+<!-- Statistics Bar -->
+<div class="absolute bottom-24 w-full max-w-4xl mx-auto flex justify-between border-t border-b border-primary py-4 px-8 bg-background z-20 reveal-item delay-200">
+<div class="flex flex-col items-start gap-1">
+<span class="font-label-caps text-[10px] text-secondary tracking-widest">TOTAL VOLUME</span>
+<span class="font-data-mono text-sm text-primary">$4.2B+</span>
+</div>
+<div class="w-px h-8 bg-primary"></div>
+<div class="flex flex-col items-start gap-1">
+<span class="font-label-caps text-[10px] text-secondary tracking-widest">ACTIVE AGENTS</span>
+<span class="font-data-mono text-sm text-primary">12,405</span>
+</div>
+<div class="w-px h-8 bg-primary"></div>
+<div class="flex flex-col items-start gap-1">
+<span class="font-label-caps text-[10px] text-secondary tracking-widest">GAS SAVED</span>
+<span class="font-data-mono text-sm text-primary">845 ETH</span>
+</div>
+</div>
+<!-- Scroll Indicator -->
+<div class="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce flex flex-col items-center gap-2 bg-background px-2">
+<span class="font-label-caps text-[10px] text-primary tracking-widest uppercase">Scroll</span>
+<span class="material-symbols-outlined text-primary text-sm" data-icon="south">south</span>
+</div>
+</section>
+<!-- Infrastructure Section -->
+<section class="py-24 w-full flex flex-col gap-12 bg-grid relative before:absolute before:inset-0 before:bg-gradient-to-b before:from-background before:to-transparent before:-z-10">
+<div class="flex justify-between items-end border-b border-primary pb-4 reveal-item bg-background">
+<h2 class="font-headline-md text-headline-md text-primary tracking-tight">The Infrastructure</h2>
+<span class="font-data-mono text-data-mono text-secondary hidden md:inline-block">UGF_ARCHITECTURE</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center reveal-item delay-100">
+<div class="flex flex-col gap-6 bg-background p-6 border border-primary">
+<h3 class="font-headline-md text-2xl text-primary">Universal Gas Facility</h3>
+<p class="font-body-md text-body-md text-secondary">
+                        Spectra abstracts away the complexities of native gas tokens. The UGF operates as a meta-transaction relayer, allowing users and agents to execute operations across Ethereum, L2s, and alternative L1s using a unified stablecoin balance or sponsored transactions.
+                    </p>
+<ul class="flex flex-col gap-2 font-data-mono text-xs text-primary mt-4">
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-sm">check</span> Abstracted Gas Sponsoring</li>
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-sm">check</span> Cross-Chain Execution Routing</li>
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-sm">check</span> Meta-Transaction Relayers</li>
+</ul>
+</div>
+<div class="border border-primary bg-background p-8 flex justify-center items-center min-h-[300px]">
+<!-- Abstract SVG Diagram for UGF -->
+<svg fill="none" height="200" viewbox="0 0 400 200" width="100%" xmlns="http://www.w3.org/2000/svg">
+<rect fill="#fff" height="40" stroke="#000" width="80" x="20" y="80"></rect>
+<text fill="#000" font-family="monospace" font-size="10" x="40" y="105">USER</text>
+<path d="M100 100 L180 100" stroke="#000" stroke-dasharray="4 4"></path>
+<circle cx="200" cy="100" fill="#fff" r="30" stroke="#000"></circle>
+<text fill="#000" font-family="monospace" font-size="12" font-weight="bold" x="188" y="104">UGF</text>
+<path d="M230 100 L310 50" stroke="#000"></path>
+<path d="M230 100 L310 100" stroke="#000"></path>
+<path d="M230 100 L310 150" stroke="#000"></path>
+<rect fill="#fff" height="30" stroke="#000" width="60" x="310" y="35"></rect>
+<text fill="#000" font-family="monospace" font-size="10" x="325" y="55">ETH</text>
+<rect fill="#fff" height="30" stroke="#000" width="60" x="310" y="85"></rect>
+<text fill="#000" font-family="monospace" font-size="10" x="325" y="105">ARB</text>
+<rect fill="#fff" height="30" stroke="#000" width="60" x="310" y="135"></rect>
+<text fill="#000" font-family="monospace" font-size="10" x="325" y="155">OP</text>
+</svg>
+</div>
+</div>
+</section>
+<!-- Features Section (Minimalist Cards) -->
+<section class="py-12 w-full flex flex-col gap-12">
+<div class="flex justify-between items-end border-b border-primary pb-4 reveal-item">
+<h2 class="font-headline-md text-headline-md text-primary tracking-tight">Core Modules</h2>
+<span class="font-data-mono text-data-mono text-secondary hidden md:inline-block">[ V 2.4.0 ]</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Card 1 -->
+<div class="border border-primary bg-background p-8 flex flex-col gap-8 reveal-item delay-100 hover:bg-surface-container-low transition-colors duration-300">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="currency_exchange">currency_exchange</span>
+<span class="font-data-mono text-[10px] text-primary border border-primary px-2 py-0.5 uppercase">[ 01 ]</span>
+</div>
+<div class="flex-grow">
+<h3 class="font-headline-md text-xl text-primary mb-3">Unified Exchange</h3>
+<p class="font-body-md text-body-md text-secondary mb-6">
+                            Aggregate liquidity across multiple ecosystems instantly. Execute trades with zero slippage tolerance parameters configured via agentic models.
+                        </p>
+<div class="border-t border-primary/20 pt-4">
+<span class="font-label-caps text-[10px] text-secondary tracking-widest block mb-2">SUPPORTED PROTOCOLS</span>
+<ul class="font-data-mono text-xs text-primary space-y-1">
+<li>&gt; Uniswap V3</li>
+<li>&gt; Curve Finance</li>
+<li>&gt; Balancer</li>
+</ul>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="border border-primary bg-background p-8 flex flex-col gap-8 reveal-item delay-200 hover:bg-surface-container-low transition-colors duration-300">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-data-mono text-[10px] text-primary border border-primary px-2 py-0.5 uppercase">[ 02 ]</span>
+</div>
+<div class="flex-grow">
+<h3 class="font-headline-md text-xl text-primary mb-3">Agentic Wallet</h3>
+<p class="font-body-md text-body-md text-secondary mb-6">
+                            Self-managing treasury protocols. Define risk thresholds once; the agent allocates, compounds, and secures assets autonomously.
+                        </p>
+<div class="border-t border-primary/20 pt-4">
+<span class="font-label-caps text-[10px] text-secondary tracking-widest block mb-2">SECURITY FEATURES</span>
+<ul class="font-data-mono text-xs text-primary space-y-1">
+<li>&gt; EIP-712 Signatures</li>
+<li>&gt; Multi-sig Thresholds</li>
+<li>&gt; HSM Integration</li>
+</ul>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="border border-primary bg-background p-8 flex flex-col gap-8 reveal-item delay-300 hover:bg-surface-container-low transition-colors duration-300">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="token">token</span>
+<span class="font-data-mono text-[10px] text-primary border border-primary px-2 py-0.5 uppercase">[ 03 ]</span>
+</div>
+<div class="flex-grow">
+<h3 class="font-headline-md text-xl text-primary mb-3">Subscriptive NFTs</h3>
+<p class="font-body-md text-body-md text-secondary mb-6">
+                            Programmable utility layers. Issue tokens that auto-renew access to decentralized services based on yield generated within the wallet.
+                        </p>
+<div class="border-t border-primary/20 pt-4">
+<span class="font-label-caps text-[10px] text-secondary tracking-widest block mb-2">TIER BENEFITS</span>
+<ul class="font-data-mono text-xs text-primary space-y-1">
+<li>&gt; Base: Gas Abstraction</li>
+<li>&gt; Pro: Priority Routing</li>
+<li>&gt; Max: Zero Protocol Fees</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Live Terminal Component -->
+<div class="w-full border-t border-b border-primary bg-background h-32 overflow-hidden relative z-10 mt-12 mb-8 hidden md:block px-margin-desktop">
+<div class="absolute top-2 left-margin-desktop font-label-caps text-[10px] tracking-widest text-secondary z-20 bg-background pr-2">LIVE TERMINAL</div>
+<div class="h-full pt-8 pb-2 overflow-hidden">
+<div class="terminal-scroll flex flex-col font-data-mono text-xs text-primary space-y-1">
+<div>[14:23:01] Agent 0xF2... executing swap on Arbitrum: 10 ETH -&gt; USDC</div>
+<div>[14:23:02] UGF Relayer confirming meta-transaction 0x8a...</div>
+<div>[14:23:05] Yield sweep completed. +45.2 USDC added to vault.</div>
+<div>[14:23:08] Agent 0xA1... balancing Curve pool LP position.</div>
+<div>[14:23:12] Subscriptive NFT renewal processed for User 0x77...</div>
+<div>[14:23:15] Gas sponsored via UGF. Fee saved: 0.002 ETH.</div>
+<!-- Duplicate for infinite scroll effect -->
+<div class="pt-4 text-secondary">-- CYCLE REPEAT --</div>
+<div>[14:23:01] Agent 0xF2... executing swap on Arbitrum: 10 ETH -&gt; USDC</div>
+<div>[14:23:02] UGF Relayer confirming meta-transaction 0x8a...</div>
+<div>[14:23:05] Yield sweep completed. +45.2 USDC added to vault.</div>
+<div>[14:23:08] Agent 0xA1... balancing Curve pool LP position.</div>
+<div>[14:23:12] Subscriptive NFT renewal processed for User 0x77...</div>
+<div>[14:23:15] Gas sponsored via UGF. Fee saved: 0.002 ETH.</div>
+</div>
+</div>
+</div>
+<!-- Footer -->
+<footer class="w-full py-8 px-margin-mobile md:px-margin-desktop border-t border-primary bg-background flex flex-col md:flex-row justify-between items-center mt-auto z-10">
+<div class="mb-6 md:mb-0">
+<span class="text-label-caps font-label-caps text-primary uppercase">© 2024 SPECTRA AGENTIC SYSTEMS [ IDLE_MODE ]</span>
+</div>
+<div class="flex flex-wrap justify-center gap-6 md:gap-8">
+<a class="text-label-caps font-label-caps text-secondary uppercase hover:text-primary transition-all duration-300" href="#">Documentation</a>
+<a class="text-label-caps font-label-caps text-secondary uppercase hover:text-primary transition-all duration-300" href="#">Terminal</a>
+<a class="text-label-caps font-label-caps text-secondary uppercase hover:text-primary transition-all duration-300" href="#">Security</a>
+<a class="text-label-caps font-label-caps text-secondary uppercase hover:text-primary transition-all duration-300" href="#">Status</a>
+</div>
+</footer>
+<!-- Interactive Scripts -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Scroll Reveal Logic
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.1
+            };
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            const revealElements = document.querySelectorAll('.reveal-item');
+            revealElements.forEach(el => {
+                if(!el.classList.contains('is-visible')) {
+                    observer.observe(el);
+                }
+            });
+        });
+    </script>
+</body></html>

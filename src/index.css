@@ -1,0 +1,198 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;600&family=Poppins:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
+
+/* ─── Design Tokens ─────────────────────────────────────────────────────────── */
+:root,
+[data-theme='light'] {
+  --bg:            #ffffff;
+  --bg-surface:    #f4f4f5;
+  --bg-surface-low:#e4e4e7;
+  --bg-surface-container: #d4d4d8;
+  --color-primary: #09090b;
+  --color-secondary: #52525b;
+  --color-on-primary: #ffffff;
+  --border-color:  rgba(9, 9, 11, 0.08);
+  --border-muted:  rgba(9, 9, 11, 0.04);
+
+  /* dot-grid background */
+  --dot-color: #d4d4d8;
+  --grid-color: #e4e4e7;
+}
+
+[data-theme='dark'] {
+  --bg:            #0a0a0b;
+  --bg-surface:    #121214;
+  --bg-surface-low:#18181b;
+  --bg-surface-container: #27272a;
+  --color-primary: #ffffff;
+  --color-secondary: #a1a1aa;
+  --color-on-primary: #000000;
+  --border-color:  rgba(255, 255, 255, 0.08);
+  --border-muted:  rgba(255, 255, 255, 0.04);
+
+  --dot-color: #27272a;
+  --grid-color: #18181b;
+}
+
+/* ─── Global Reset ───────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: var(--bg);
+  color: var(--color-primary);
+  min-height: 100vh;
+  transition: background-color 0.25s ease, color 0.25s ease;
+  overflow-x: hidden;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  /* Remove old layout constraints */
+  max-width: 100%;
+  margin: 0;
+  border: none;
+  text-align: left;
+}
+
+/* ─── Typography ─────────────────────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Poppins', sans-serif;
+  color: var(--color-primary);
+  margin: 0;
+}
+
+p { margin: 0; }
+a { text-decoration: none; color: inherit; }
+button { font-family: 'Geist', monospace; cursor: pointer; border: none; background: none; }
+input, textarea { font-family: 'Geist', monospace; }
+
+/* ─── Font utility classes (matching design tokens) ─────────────────────────── */
+.font-data-mono  { font-family: 'Geist', monospace; }
+.font-label-caps { font-family: 'Geist', monospace; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; font-size: 11px; }
+
+/* ─── Backgrounds ────────────────────────────────────────────────────────────── */
+.bg-dots {
+  background-image: radial-gradient(var(--dot-color) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.bg-grid {
+  background-size: 40px 40px;
+  background-image:
+    linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+}
+
+/* ─── Material Symbols ───────────────────────────────────────────────────────── */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+  user-select: none;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border-color); }
+
+/* ─── Scroll reveal ──────────────────────────────────────────────────────────── */
+.reveal-item {
+  opacity: 0;
+  transform: translateY(20px);
+  visibility: hidden;
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal-item.is-visible {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+  visibility: visible !important;
+}
+.delay-100 { transition-delay: 100ms; }
+.delay-200 { transition-delay: 200ms; }
+.delay-300 { transition-delay: 300ms; }
+
+/* ─── Terminal scroll ────────────────────────────────────────────────────────── */
+@keyframes scrollUp {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
+}
+.terminal-scroll {
+  animation: scrollUp 20s linear infinite;
+}
+.terminal-scroll:hover {
+  animation-play-state: paused;
+}
+
+/* ─── Loading pulse border ───────────────────────────────────────────────────── */
+@keyframes pulse-border {
+  0%   { border-color: transparent; }
+  50%  { border-color: var(--border-color); }
+  100% { border-color: transparent; }
+}
+.loading-state {
+  animation: pulse-border 1.5s infinite;
+}
+
+/* ─── Transitions ────────────────────────────────────────────────────────────── */
+* { transition-property: background-color, color, border-color; transition-duration: 0.25s; transition-timing-function: ease; }
+/* except for transforms — don't slow them down */
+button, a { transition-property: background-color, color, border-color, opacity, transform; transition-duration: 0.2s; }
+
+/* ─── Scroll-driven animations & Dribbling ─────────────────────────────────────── */
+@keyframes scroll-progress {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+.scroll-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #b026ff, #00f2fe);
+  z-index: 9999;
+  width: 0%;
+  animation: scroll-progress auto linear;
+  animation-timeline: scroll();
+}
+
+@keyframes scroll-dribble {
+  0% { transform: translateY(40px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.scroll-dribble-card {
+  animation: scroll-dribble auto cubic-bezier(0.25, 1, 0.5, 1);
+  animation-timeline: view();
+  animation-range: entry 10% cover 30%;
+}
+

@@ -1,0 +1,9 @@
+{
+  "network": "base-sepolia",
+  "mockUSD": "0x27DC1C167AeF232bb1e21073304B526726a8727e",
+  "spectraSaaS": "0xA58Ce4Bac06E8723BBf45F595f2C8dbC0e021100",
+  "spectraNFT": "0x45935fA416E2fb9C08E784E4B816B29be4D031b3",
+  "spectraExchange": "0x27aA3d225d062d669279920727A8A1A438F4cd68",
+  "deployer": "0x56c362EEb3e913929fDd5520AF259753938c5F08",
+  "timestamp": "2026-06-06T10:57:31.279Z"
+}

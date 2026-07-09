@@ -1,0 +1,60 @@
+nav.sc-bdDsCe.jvubsl {
+  border: blue 2px solid;
+  border-radius: 4rem;
+  padding: 1% 5%;
+  backdrop-filter: blur(10px) brightness(0.5);
+  background: transparent;
+  border: blue 2px solid;
+  padding: 1% 4%;
+}
+
+.sc-krVzYl.dHiVny {
+  border: blue 1px solid;
+}
+
+.sc-hHopjF.hHxQKp.reveal-item.delay-200.is-visible {
+  border: 1px solid blue;
+}
+.sc-cBEgGa.kWqvoW {
+  background: blue;
+}
+
+.kWqvoW svg rect,
+.kWqvoW svg circle {
+  fill: white;
+  padding: 1em;
+}
+
+.kWqvoW svg text {
+  fill: blue;
+  font-size: 1em;
+  font-weight: 900;
+}
+.sc-fbtdoJ.bnlBPz.reveal-item.delay-200.is-visible {
+  border: 1px solid blue;
+}
+.sc-hUheUT.gemJjm {
+  width: 100%;
+  top: 0;
+  padding: 1%;
+  border: blue 1px solid;
+  left: 0;
+}
+
+.sc-jgzHYo.fAysoh {
+  background: blue;
+}
+.sc-jgzHYo.fAysoh {
+  background: blue;
+}
+
+.sc-khYboC.cisvZr {
+  height: 10rem;
+}
+main.spectra-exchange-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1% 0;
+  flex-direction: column;
+}

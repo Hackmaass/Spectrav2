@@ -1,0 +1,977 @@
+.spectra-agent-page {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+}
+
+.spectra-agent-terminal-shell {
+  width: 100%;
+  max-width: 960px;
+  min-height: 819px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: #0a0a0b;
+  box-shadow: 0 20px 80px rgba(176, 38, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+}
+
+.spectra-agent-terminal-header {
+  height: 48px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px;
+}
+
+.spectra-agent-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: "Geist", monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.spectra-agent-header-right {
+  display: flex;
+  gap: 8px;
+}
+
+.spectra-agent-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+}
+
+.spectra-agent-chat {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 28px;
+}
+
+.spectra-agent-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.spectra-agent-card-user {
+  align-self: flex-end;
+  max-width: 82%;
+  align-items: flex-end;
+}
+
+.spectra-agent-card-system {
+  align-self: flex-start;
+  max-width: 92%;
+}
+
+.spectra-agent-label {
+  font-family: "Geist", monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #a1a1aa;
+}
+
+.spectra-agent-bubble {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 14px 16px;
+  font-family: "Geist", monospace;
+  font-size: 14px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.spectra-agent-json {
+  border-left: 1px solid rgba(176, 38, 255, 0.5);
+  padding-left: 16px;
+}
+
+.spectra-agent-json pre {
+  margin: 0;
+  white-space: pre-wrap;
+  color: #ffffff;
+}
+
+.spectra-agent-status {
+  color: #b026ff;
+}
+
+.spectra-agent-cta {
+  margin-top: 8px;
+  align-self: flex-start;
+  border: 1px solid #b026ff;
+  color: #ffffff;
+  background: rgba(176, 38, 255, 0.18);
+  padding: 12px 18px;
+  font-family: "Geist", monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spectra-agent-cta:disabled {
+  opacity: 0.45;
+}
+
+.spectra-agent-error {
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.08);
+  color: #fca5a5;
+  padding: 12px;
+  font-family: "Geist", monospace;
+  font-size: 13px;
+}
+
+.spectra-agent-input-row {
+  height: 76px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 18px;
+}
+
+.spectra-agent-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-family: "Geist", monospace;
+  font-size: 16px;
+}
+
+.spectra-agent-input:focus {
+  outline: none;
+}
+
+.spectra-agent-submit {
+  color: #b026ff;
+  font-family: "Geist", monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.spectra-exchange-wrap {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.spectra-exchange-wide {
+  max-width: 980px;
+}
+
+.spectra-exchange-page {
+  width: 100%;
+  min-height: 819px;
+  display: flex;
+  justify-content: center;
+  padding: 120px 16px 96px;
+}
+
+.spectra-exchange-layout {
+  width: 100%;
+  max-width: 1440px;
+  display: flex;
+  flex-direction: row;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.spectra-exchange-left {
+  flex: 0 0 60%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.spectra-exchange-right {
+  flex: 0 0 40%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .spectra-exchange-layout {
+    flex-direction: column;
+  }
+
+  .spectra-exchange-left,
+  .spectra-exchange-right {
+    flex: 1 1 auto;
+  }
+}
+
+.spectra-exchange-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.spectra-exchange-title {
+  font-family: "Poppins", sans-serif;
+  font-size: clamp(2.2rem, 5vw, 3rem);
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+.spectra-exchange-sub {
+  font-family: "Geist", monospace;
+  font-size: 12px;
+  color: #e5e5e5;
+}
+
+.spectra-chart-shell {
+  margin-bottom: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(10, 10, 11, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 0 24px rgba(176, 38, 255, 0.14);
+}
+
+.spectra-chart-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.spectra-chart-label,
+.spectra-chart-symbol {
+  font-family: "Geist", monospace;
+  font-size: 12px;
+  color: #ffffff;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.spectra-chart-symbol {
+  color: #b026ff;
+}
+
+.spectra-chart-frame {
+  width: 100%;
+  height: 480px;
+  border: 0;
+  display: block;
+  background: #0a0a0b;
+}
+
+.spectra-swap-box {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(10, 10, 11, 0.62);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.spectra-swap-label {
+  font-family: "Geist", monospace;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.spectra-swap-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.spectra-swap-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-family: "Geist", monospace;
+  font-size: 32px;
+  color: #ffffff;
+}
+
+.spectra-select {
+  min-width: 210px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(10, 10, 11, 0.9);
+  color: #ffffff;
+  padding: 9px 11px;
+  font-family: "Geist", monospace;
+  font-size: 12px;
+}
+
+.spectra-select:focus {
+  outline: none;
+  border-color: #b026ff;
+  box-shadow: 0 0 14px rgba(176, 38, 255, 0.35);
+}
+
+.spectra-token-badge {
+  border: 1px solid #b026ff;
+  color: #ffffff;
+  background: rgba(176, 38, 255, 0.2);
+  padding: 8px 12px;
+  font-family: "Geist", monospace;
+  font-size: 12px;
+}
+
+.spectra-swap-input:focus {
+  outline: none;
+}
+
+.spectra-token-btn {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: transparent;
+  color: #ffffff;
+  padding: 8px 12px;
+  font-family: "Geist", monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.spectra-token-btn-active {
+  border-color: #b026ff;
+  color: #b026ff;
+  background: rgba(176, 38, 255, 0.12);
+}
+
+.spectra-balance-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-family: "Geist", monospace;
+  font-size: 12px;
+  color: #e5e5e5;
+}
+
+.spectra-balance-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.spectra-balance-text {
+  font-family: "Geist", monospace;
+  font-size: 12px;
+  color: #e5e5e5;
+}
+
+.spectra-connect-btn {
+  align-self: flex-end;
+}
+
+.spectra-status-toast,
+.spectra-error-box {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(10, 10, 11, 0.75);
+  color: #ffffff;
+  font-family: "Geist", monospace;
+  font-size: 12px;
+  padding: 10px 12px;
+}
+
+.spectra-error-box {
+  border-color: rgba(239, 68, 68, 0.55);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.spectra-connect-btn {
+  border: 1px solid #b026ff;
+  background: rgba(176, 38, 255, 0.12);
+  color: #ffffff;
+  padding: 6px 10px;
+  font-family: "Geist", monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.spectra-swap-divider {
+  display: flex;
+  justify-content: center;
+  margin: -10px 0;
+  z-index: 2;
+}
+
+.spectra-swap-flip {
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: #0a0a0b;
+  color: #b026ff;
+}
+
+.spectra-route-panel {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(10, 10, 11, 0.62);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.spectra-route-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.spectra-route-key {
+  font-family: "Geist", monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #e5e5e5;
+}
+
+.spectra-route-value {
+  font-family: "Geist", monospace;
+  font-size: 13px;
+  color: #ffffff;
+}
+
+.spectra-route-value-accent {
+  color: #b026ff;
+}
+
+.spectra-execute-btn {
+  width: 100%;
+  margin-top: 20px;
+  border: 1px solid #b026ff;
+  background: rgba(176, 38, 255, 0.16);
+  color: #ffffff;
+  padding: 16px;
+  font-family: "Geist", monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.spectra-execute-btn:disabled {
+  opacity: 0.5;
+}
+
+.spectra-tx-panel {
+  margin-top: 16px;
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  background: rgba(16, 185, 129, 0.08);
+  color: #d1fae5;
+  padding: 12px;
+  font-family: "Geist", monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.spectra-badge-image {
+  width: 220px;
+  height: 220px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 18px rgba(176, 38, 255, 0.18));
+}
+
+.spectra-mint-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+.spectra-mint-page {
+  width: 100%;
+  min-height: 100vh;
+  padding: 120px 16px 64px;
+  max-width: 1440px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.spectra-mint-page-head {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.spectra-mint-page-title {
+  font-family: "Poppins", sans-serif;
+  font-size: clamp(2rem, 5vw, 3rem);
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+.spectra-mint-page-sub {
+  font-family: "Geist", monospace;
+  font-size: 14px;
+  color: #a1a1aa;
+  max-width: 720px;
+}
+
+@media (min-width: 1024px) {
+  .spectra-mint-grid {
+    grid-template-columns: 5fr 7fr;
+  }
+}
+
+.spectra-mint-left,
+.spectra-mint-right {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.spectra-render-box {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  min-height: 400px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.spectra-cube-svg {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 0.5;
+}
+
+.spectra-cube-polygon,
+.spectra-cube-line {
+  stroke: #ffffff;
+}
+
+.spectra-render-label,
+.spectra-status-badge {
+  position: absolute;
+  top: 16px;
+  font-family: "Geist", monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.spectra-render-label {
+  left: 16px;
+  color: #a1a1aa;
+}
+
+.spectra-status-badge {
+  right: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 4px 8px;
+  color: #ffffff;
+}
+
+.spectra-action-box {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 24px;
+}
+
+.spectra-action-head {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.spectra-action-label {
+  font-family: "Geist", monospace;
+  font-size: 11px;
+  color: #e5e5e5;
+  text-transform: uppercase;
+}
+
+.spectra-action-value {
+  font-family: "Geist", monospace;
+  font-size: 14px;
+  color: #ffffff;
+}
+
+.spectra-mint-btn {
+  width: 100%;
+  border: 1px solid #b026ff;
+  background: rgba(176, 38, 255, 0.15);
+  color: #ffffff;
+  padding: 16px;
+  font-family: "Geist", monospace;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.spectra-mint-status {
+  margin-top: 12px;
+  font-family: "Geist", monospace;
+  font-size: 13px;
+  color: #e5e5e5;
+  text-align: center;
+}
+
+.spectra-tier-label {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 8px;
+  font-family: "Geist", monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #e5e5e5;
+}
+
+.spectra-tier-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+@media (min-width: 768px) {
+  .spectra-tier-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.spectra-tier-card {
+  padding: 24px;
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.spectra-tier-card:last-child {
+  border-right: none;
+}
+
+.spectra-tier-card-active {
+  background: rgba(176, 38, 255, 0.24);
+}
+
+.spectra-tier-name {
+  font-family: "Poppins", sans-serif;
+  font-size: 30px;
+  color: #ffffff;
+}
+
+.spectra-tier-price {
+  font-family: "Geist", monospace;
+  font-size: 12px;
+  color: #e5e5e5;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  display: inline-block;
+  padding: 4px 8px;
+}
+
+.spectra-tier-description {
+  font-family: "Geist", monospace;
+  font-size: 12px;
+  color: #e5e5e5;
+  line-height: 1.6;
+}
+
+.spectra-tier-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-family: "Geist", monospace;
+  font-size: 13px;
+  color: #ffffff;
+  flex: 1;
+}
+
+.spectra-tier-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.spectra-tier-icon {
+  font-size: 14px;
+  color: #ffffff;
+  margin-top: 2px;
+}
+
+.spectra-tier-feature {
+  color: #ffffff;
+}
+
+.spectra-tier-foot {
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  padding-top: 12px;
+  font-family: "Geist", monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #a1a1aa;
+}
+
+.spectra-tier-foot-active {
+  color: #ffffff;
+}
+
+.spectra-mint-feedback {
+  margin-top: 14px;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  padding: 10px;
+  color: #fca5a5;
+  font-family: "Geist", monospace;
+  font-size: 12px;
+}
+
+.reveal-item {
+  opacity: 0;
+  transform: translateY(20px);
+  visibility: hidden;
+  transition:
+    opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0.8s ease;
+}
+
+.reveal-item.is-visible {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+  visibility: visible !important;
+}
+
+/* --- UGF Geometric Spinner & Approval Loader --- */
+
+@keyframes spectra-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spectra-pulse-border {
+  0% {
+    border-color: rgba(176, 38, 255, 0.3);
+    border-top-color: #b026ff;
+  }
+  50% {
+    border-color: rgba(176, 38, 255, 0.6);
+    border-top-color: #d06aff;
+  }
+  100% {
+    border-color: rgba(176, 38, 255, 0.3);
+    border-top-color: #b026ff;
+  }
+}
+
+.spectra-geometric-spinner,
+.spectra-agent-geometric-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(176, 38, 255, 0.3);
+  border-top: 3px solid #b026ff;
+  border-radius: 50%;
+  animation:
+    spectra-spin 0.85s linear infinite,
+    spectra-pulse-border 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.spectra-approval-loader,
+.spectra-agent-loader-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  margin: 8px 0;
+  background: rgba(176, 38, 255, 0.06);
+  border: 1px solid rgba(176, 38, 255, 0.2);
+  border-radius: 10px;
+}
+
+.spectra-approval-text,
+.spectra-agent-loader-text {
+  font-family: "Geist Mono", "Poppins", monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: #b026ff;
+  text-transform: uppercase;
+}
+
+.spectra-approval-confirmed {
+  color: #34d399;
+}
+
+/* Error display — red text for UGF SDK errors */
+.spectra-error-box,
+.spectra-agent-error {
+  color: #ff4444;
+  font-family: "Geist Mono", "Poppins", monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  padding: 10px 16px;
+  margin-top: 8px;
+  background: rgba(255, 68, 68, 0.06);
+  border: 1px solid rgba(255, 68, 68, 0.2);
+  border-radius: 8px;
+  word-break: break-word;
+}
+
+/* --- Agent Terminal Redesign --- */
+
+.spectra-agent-layout {
+  display: flex;
+  width: 100%;
+  height: calc(100vh - 180px);
+  max-width: 1440px;
+  gap: 24px;
+  margin: 0 auto;
+}
+
+.spectra-agent-sidebar {
+  flex: 0 0 300px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.spectra-sidebar-title {
+  font-family: "Geist Mono", monospace;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+
+.spectra-history-item {
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.spectra-history-item:hover {
+  background: rgba(176, 38, 255, 0.1);
+  border-color: rgba(176, 38, 255, 0.3);
+}
+
+.spectra-agent-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+}
+
+.spectra-agent-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 24px;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.spectra-pill {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  font-family: "Geist Mono", monospace;
+  font-size: 0.75rem;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+  backdrop-filter: blur(10px);
+}
+
+.spectra-pill:hover {
+  background: rgba(176, 38, 255, 0.15);
+  border-color: #b026ff;
+  box-shadow: 0 0 10px rgba(176, 38, 255, 0.2);
+}
+
+.spectra-agent-chat-area {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.spectra-agent-input-container {
+  padding: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.4);
+}
+div#hero-spline {
+  border-radius: 10rem;
+  overflow: hidden;
+}
+
+#hero-spline canvas {
+  scale: 1.45;
+}
+.spectra-balance-stack {
+  margin: 3% 0;
+}
+video.nftvideo::after {
+  content: " ";
+  background: white;
+  height: 10px;
+  width: 10px;
+  position: relative;
+  display: block;
+}
+
+.spectra-render-box {
+  border-radius: 33rem;
+  overflow: hidden;
+}
+
+.nftdiv {
+  height: 100%;
+}

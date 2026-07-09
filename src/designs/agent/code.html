@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SPECTRA - Autonomous Agentic Wallet</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;600&amp;family=Hanken+Grotesk:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#5d5f5f",
+                        "on-tertiary": "#ffffff",
+                        "surface-container": "#eeeeee",
+                        "surface": "#f9f9f9",
+                        "on-tertiary-fixed-variant": "#474747",
+                        "inverse-on-surface": "#f1f1f1",
+                        "on-surface": "#1b1b1b",
+                        "surface-tint": "#5e5e5e",
+                        "on-surface-variant": "#4c4546",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed-variant": "#474747",
+                        "surface-bright": "#f9f9f9",
+                        "secondary-fixed": "#e2e2e2",
+                        "on-tertiary-container": "#848484",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed": "#e2e2e2",
+                        "secondary-container": "#dfe0e0",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#454747",
+                        "outline-variant": "#cfc4c5",
+                        "surface-variant": "#e2e2e2",
+                        "on-primary": "#ffffff",
+                        "outline": "#7e7576",
+                        "on-secondary-fixed": "#1a1c1c",
+                        "primary-fixed": "#e2e2e2",
+                        "surface-container-highest": "#e2e2e2",
+                        "surface-container-low": "#f3f3f3",
+                        "inverse-surface": "#303030",
+                        "on-error": "#ffffff",
+                        "on-secondary-container": "#616363",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed": "#1b1b1b",
+                        "background": "#f9f9f9",
+                        "on-primary-container": "#848484",
+                        "surface-dim": "#dadada",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-container": "#1b1b1b",
+                        "primary-fixed-dim": "#c6c6c6",
+                        "inverse-primary": "#c6c6c6",
+                        "on-tertiary-fixed": "#1b1b1b",
+                        "surface-container-high": "#e8e8e8",
+                        "tertiary": "#000000",
+                        "tertiary-fixed-dim": "#c6c6c6",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "on-background": "#1b1b1b",
+                        "primary": "#000000",
+                        "primary-container": "#1b1b1b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "64px",
+                        "margin-mobile": "16px",
+                        "container-max": "1440px",
+                        "unit": "4px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Hanken Grotesk"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "data-mono": ["Geist"],
+                        "label-caps": ["Geist"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "1.5", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "headline-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "600" }],
+                        "headline-md": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "500" }],
+                        "data-mono": ["14px", { "lineHeight": "1.4", "letterSpacing": "0.02em", "fontWeight": "300" }],
+                        "label-caps": ["12px", { "lineHeight": "1.2", "letterSpacing": "0.1em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Force Stark Brutalism / Idle Mode (White bg, Black text/strokes) */
+        body {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }
+        .stark-border { border-color: #000000 !important; border-width: 1px !important; border-style: solid !important; }
+        .stark-text { color: #000000 !important; }
+        .stark-bg { background-color: #ffffff !important; }
+        .stark-invert { background-color: #000000 !important; color: #ffffff !important; }
+        .stark-invert-hover:hover { background-color: #000000 !important; color: #ffffff !important; transition: none; }
+        
+        /* Typography Enforcement */
+        .font-data-mono { font-family: 'Geist', monospace; }
+        .font-label-caps { font-family: 'Geist', monospace; text-transform: uppercase; }
+        
+        /* Hide scrollbar for terminal feel */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #ffffff; }
+        ::-webkit-scrollbar-thumb { background: #000000; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-body-md text-body-md antialiased overflow-hidden">
+<!-- TopNavBar (Shared Component) - Rendered as Stark Black/White -->
+<header class="fixed top-4 left-1/2 -translate-x-1/2 rounded-full border border-primary dark:border-on-primary px-6 py-2 bg-surface/80 dark:bg-tertiary/80 backdrop-blur-md flex items-center justify-between w-full max-w-4xl mx-auto z-50 stark-border stark-bg">
+<div class="text-label-caps font-label-caps font-bold tracking-widest text-primary dark:text-on-primary stark-text">SPECTRA</div>
+<nav class="hidden md:flex gap-8">
+<!-- Agent is active based on intent -->
+<a class="text-secondary dark:text-on-secondary-fixed-variant text-label-caps font-label-caps hover:text-primary dark:hover:text-on-primary transition-colors duration-200 stark-text opacity-50 hover:opacity-100" href="#">Home</a>
+<a class="text-secondary dark:text-on-secondary-fixed-variant text-label-caps font-label-caps hover:text-primary dark:hover:text-on-primary transition-colors duration-200 stark-text opacity-50 hover:opacity-100" href="#">Exchange</a>
+<a class="text-primary dark:text-on-primary border-b border-primary dark:border-on-primary text-label-caps font-label-caps scale-98 active:scale-95 transition-transform stark-text stark-border border-t-0 border-l-0 border-r-0" href="#">Agent</a>
+<a class="text-secondary dark:text-on-secondary-fixed-variant text-label-caps font-label-caps hover:text-primary dark:hover:text-on-primary transition-colors duration-200 stark-text opacity-50 hover:opacity-100" href="#">NFT Minting</a>
+<a class="text-secondary dark:text-on-secondary-fixed-variant text-label-caps font-label-caps hover:text-primary dark:hover:text-on-primary transition-colors duration-200 stark-text opacity-50 hover:opacity-100" href="#">About</a>
+</nav>
+<button class="stark-text opacity-50 hover:opacity-100">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">contrast</span>
+</button>
+</header>
+<!-- Main Terminal Container -->
+<main class="flex-grow flex items-center justify-center p-4 md:p-margin-desktop mt-20 md:mt-0 relative z-10">
+<!-- Central Floating Terminal Window -->
+<div class="w-full max-w-4xl h-[819px] flex flex-col stark-border stark-bg relative">
+<!-- Terminal Header -->
+<div class="h-12 border-b stark-border flex items-center justify-between px-4 stark-bg">
+<div class="flex items-center gap-4 text-label-caps font-label-caps stark-text">
+<span class="material-symbols-outlined text-sm">terminal</span>
+<span>AGENTIC_WALLET_OS // ACTIVE_MODE</span>
+</div>
+<div class="flex gap-2">
+<span class="w-3 h-3 border stark-border rounded-full"></span>
+<span class="w-3 h-3 border stark-border rounded-full"></span>
+<span class="w-3 h-3 border stark-border rounded-full"></span>
+</div>
+</div>
+<!-- Chat Interface Area -->
+<div class="flex-grow overflow-y-auto p-8 flex flex-col gap-8" id="chat-container">
+<!-- User Message -->
+<div class="self-end max-w-[80%] flex flex-col gap-2 items-end">
+<span class="text-label-caps font-label-caps stark-text opacity-50">USER_INPUT</span>
+<div class="stark-border px-4 py-3 font-data-mono text-data-mono">
+                        Route 500 USDC to Arbitrum, then execute a swap to ETH and stake it in Lido. Wait for gas to drop below 15 gwei.
+                    </div>
+</div>
+<!-- AI System Response -->
+<div class="self-start max-w-[90%] flex flex-col gap-2">
+<span class="text-label-caps font-label-caps stark-text opacity-50">SYSTEM_AGENT</span>
+<div class="stark-border p-6 font-data-mono text-data-mono flex flex-col gap-6">
+<div>
+<p>&gt; Parsing intent...</p>
+<p>&gt; Constructing multi-step cross-chain transaction...</p>
+<p>&gt; Status: <span class="stark-invert px-1">[ READY ]</span></p>
+</div>
+<!-- JSON Intent Readout -->
+<div class="pl-4 border-l stark-border">
+<pre class="whitespace-pre-wrap">{
+  "intent_id": "0x8f2a...91b4",
+  "trigger": {
+    "type": "GAS_CONDITION",
+    "network": "ethereum",
+    "threshold_gwei": "&lt; 15"
+  },
+  "execution_graph": [
+    {
+      "step": 1,
+      "action": "BRIDGE",
+      "asset": "USDC",
+      "amount": "500",
+      "from": "ethereum",
+      "to": "arbitrum"
+    },
+    {
+      "step": 2,
+      "action": "SWAP",
+      "dex": "uniswap_v3",
+      "pair": "USDC/ETH"
+    },
+    {
+      "step": 3,
+      "action": "STAKE",
+      "protocol": "lido",
+      "asset": "ETH"
+    }
+  ],
+  "estimated_fees": "~$4.20"
+}</pre>
+</div>
+<!-- CTA -->
+<button class="self-start px-6 py-3 border stark-border font-label-caps text-label-caps flex items-center gap-2 stark-invert-hover group">
+<span class="material-symbols-outlined text-sm group-hover:stark-invert transition-none">signature</span>
+                            Sign &amp; Execute (EIP-712)
+                        </button>
+</div>
+</div>
+</div>
+<!-- Input Field Area -->
+<div class="h-20 border-t stark-border flex items-center px-6 gap-4 stark-bg">
+<span class="material-symbols-outlined stark-text">chevron_right</span>
+<input class="flex-grow bg-transparent border-none focus:ring-0 text-body-lg font-data-mono stark-text placeholder-gray-500 p-0" placeholder="What onchain action can I route for you?" type="text"/>
+<button class="stark-text opacity-50 hover:opacity-100 font-label-caps text-label-caps">[ SUBMIT ]</button>
+</div>
+</div>
+</main>
+<!-- Background Matrix/Grid Hint (Subtle) -->
+<div class="fixed inset-0 pointer-events-none z-0" style="background-image: radial-gradient(circle at 50% 50%, rgba(0,0,0,0.05) 1px, transparent 1px); background-size: 24px 24px;"></div>
+</body></html>

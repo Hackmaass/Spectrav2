@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SPECTRA - About &amp; Compliance</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;600&amp;family=Hanken+Grotesk:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#5d5f5f",
+                        "on-tertiary": "#ffffff",
+                        "surface-container": "#eeeeee",
+                        "surface": "#f9f9f9",
+                        "on-tertiary-fixed-variant": "#474747",
+                        "inverse-on-surface": "#f1f1f1",
+                        "on-surface": "#1b1b1b",
+                        "surface-tint": "#5e5e5e",
+                        "on-surface-variant": "#4c4546",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed-variant": "#474747",
+                        "surface-bright": "#f9f9f9",
+                        "secondary-fixed": "#e2e2e2",
+                        "on-tertiary-container": "#848484",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed": "#e2e2e2",
+                        "secondary-container": "#dfe0e0",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#454747",
+                        "outline-variant": "#cfc4c5",
+                        "surface-variant": "#e2e2e2",
+                        "on-primary": "#ffffff",
+                        "outline": "#7e7576",
+                        "on-secondary-fixed": "#1a1c1c",
+                        "primary-fixed": "#e2e2e2",
+                        "surface-container-highest": "#e2e2e2",
+                        "surface-container-low": "#f3f3f3",
+                        "inverse-surface": "#303030",
+                        "on-error": "#ffffff",
+                        "on-secondary-container": "#616363",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed": "#1b1b1b",
+                        "background": "#f9f9f9",
+                        "on-primary-container": "#848484",
+                        "surface-dim": "#dadada",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-container": "#1b1b1b",
+                        "primary-fixed-dim": "#c6c6c6",
+                        "inverse-primary": "#c6c6c6",
+                        "on-tertiary-fixed": "#1b1b1b",
+                        "surface-container-high": "#e8e8e8",
+                        "tertiary": "#000000",
+                        "tertiary-fixed-dim": "#c6c6c6",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "on-background": "#1b1b1b",
+                        "primary": "#000000",
+                        "primary-container": "#1b1b1b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "64px",
+                        "margin-mobile": "16px",
+                        "container-max": "1440px",
+                        "unit": "4px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Hanken Grotesk"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "data-mono": ["Geist"],
+                        "label-caps": ["Geist"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "1.5", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "headline-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "600" }],
+                        "headline-md": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "500" }],
+                        "data-mono": ["14px", { "lineHeight": "1.4", "letterSpacing": "0.02em", "fontWeight": "300" }],
+                        "label-caps": ["12px", { "lineHeight": "1.2", "letterSpacing": "0.1em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: theme('colors.background'); color: theme('colors.on-background'); }
+        /* Focus styles for accessibility */
+        *:focus-visible { outline: 2px solid theme('colors.primary'); outline-offset: 2px; }
+        .grid-12 { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: theme('spacing.gutter'); }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: theme('spacing.gutter'); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-body-md antialiased selection:bg-primary selection:text-on-primary">
+<!-- TopNavBar (Shared Component) -->
+<header class="fixed top-4 left-1/2 -translate-x-1/2 rounded-full border border-primary dark:border-on-primary px-6 py-2 bg-surface/80 dark:bg-tertiary/80 backdrop-blur-md flex items-center justify-between w-full max-w-4xl mx-auto z-50">
+<div class="text-label-caps font-label-caps font-bold tracking-widest text-primary dark:text-on-primary">
+            SPECTRA
+        </div>
+<nav class="hidden md:flex space-x-6 items-center">
+<a class="text-label-caps font-label-caps text-secondary dark:text-on-secondary-fixed-variant hover:text-primary dark:hover:text-on-primary transition-colors duration-200" href="#">Home</a>
+<a class="text-label-caps font-label-caps text-secondary dark:text-on-secondary-fixed-variant hover:text-primary dark:hover:text-on-primary transition-colors duration-200" href="#">Exchange</a>
+<a class="text-label-caps font-label-caps text-secondary dark:text-on-secondary-fixed-variant hover:text-primary dark:hover:text-on-primary transition-colors duration-200" href="#">Agent</a>
+<a class="text-label-caps font-label-caps text-secondary dark:text-on-secondary-fixed-variant hover:text-primary dark:hover:text-on-primary transition-colors duration-200" href="#">NFT Minting</a>
+<a class="text-label-caps font-label-caps text-primary dark:text-on-primary border-b border-primary dark:border-on-primary" href="#">About</a>
+</nav>
+<div class="flex items-center space-x-4">
+<button class="scale-98 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-primary dark:text-on-primary" data-icon="contrast">contrast</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-32 pb-24 px-margin-mobile md:px-margin-desktop w-full max-w-container-max mx-auto">
+<!-- Hero Section -->
+<section class="mb-32">
+<div class="grid-4 md:grid-12 items-end">
+<div class="col-span-4 md:col-span-8">
+<h1 class="text-headline-lg font-headline-lg text-primary mb-6">[ TRANSPARENCY &amp; COMPLIANCE ]</h1>
+<p class="text-body-lg font-body-lg text-secondary max-w-2xl">
+                        SPECTRA operates at the intersection of high-speed autonomous execution and rigorous regulatory adherence. Our architecture is designed to demystify complex Web3 interactions while maintaining an unyielding commitment to legal frameworks.
+                    </p>
+</div>
+<div class="col-span-4 mt-8 md:mt-0 flex md:justify-end">
+<div class="border border-primary px-4 py-2 inline-flex items-center space-x-2">
+<span class="w-2 h-2 bg-primary rounded-full animate-pulse"></span>
+<span class="text-data-mono font-data-mono">SYSTEM_STATUS: OPERATIONAL</span>
+</div>
+</div>
+</div>
+<div class="w-full h-px bg-primary mt-12"></div>
+</section>
+<!-- Mission: Gas Abstraction -->
+<section class="mb-32">
+<div class="grid-4 md:grid-12">
+<div class="col-span-4 md:col-span-4 mb-8 md:mb-0">
+<h2 class="text-headline-md font-headline-md text-primary sticky top-24">Mission Object</h2>
+</div>
+<div class="col-span-4 md:col-span-8 space-y-16">
+<!-- UGF Block -->
+<div class="border border-primary p-8 bg-surface">
+<div class="flex items-center justify-between mb-8 pb-4 border-b border-primary">
+<h3 class="text-label-caps font-label-caps tracking-widest text-primary">GAS ABSTRACTION</h3>
+<span class="text-data-mono font-data-mono text-secondary">[ UGF ARCHITECTURE ]</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<div>
+<p class="text-body-md font-body-md text-on-surface mb-4">
+                                    The Universal Gas Facility (UGF) represents a paradigm shift in autonomous transaction execution. By abstracting the underlying network fee mechanics, SPECTRA ensures that agents can execute complex, multi-step strategies without the friction of variable gas costs halting execution.
+                                </p>
+</div>
+<div class="border border-primary p-4 bg-surface-container-low flex flex-col justify-center">
+<span class="text-data-mono font-data-mono block mb-2 text-secondary">// Execution Flow</span>
+<span class="text-data-mono font-data-mono block">&gt; Agent Init</span>
+<span class="text-data-mono font-data-mono block">&gt; UGF Estimate</span>
+<span class="text-data-mono font-data-mono block">&gt; Relay Confirm</span>
+<span class="text-data-mono font-data-mono block">&gt; Transaction Success</span>
+</div>
+</div>
+</div>
+<!-- Mock USD Block -->
+<div class="border border-primary p-8 bg-surface">
+<div class="flex items-center justify-between mb-8 pb-4 border-b border-primary">
+<h3 class="text-label-caps font-label-caps tracking-widest text-primary">MOCK USD INTEGRATION</h3>
+<span class="text-data-mono font-data-mono text-secondary">[ SANDBOX ENVIRONMENT ]</span>
+</div>
+<p class="text-body-md font-body-md text-on-surface mb-6 max-w-3xl">
+                            Prior to live deployment, all agentic strategies undergo rigorous stress testing utilizing Mock USD within our proprietary sandbox. This isolates financial risk, allowing users to validate logic, monitor slippage parameters, and assess UGF impact before committing actual capital to the active protocol state.
+                        </p>
+<button class="border border-primary bg-surface text-primary hover:bg-primary hover:text-on-primary transition-colors px-6 py-3 text-label-caps font-label-caps w-fit flex items-center space-x-2">
+<span>VIEW SANDBOX DOCS</span>
+<span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Regulatory Compliance -->
+<section class="mb-24">
+<div class="grid-4 md:grid-12">
+<div class="col-span-4 md:col-span-4 mb-8 md:mb-0">
+<h2 class="text-headline-md font-headline-md text-primary sticky top-24">Regulatory<br/>Compliance</h2>
+</div>
+<div class="col-span-4 md:col-span-8">
+<div class="border border-primary divide-y divide-primary">
+<!-- Article 50 -->
+<div class="p-8 hover:bg-surface-container-low transition-colors group">
+<div class="flex items-start justify-between mb-4">
+<h4 class="text-label-caps font-label-caps tracking-widest text-primary group-hover:underline">EU AI ACT: ARTICLE 50</h4>
+<span class="material-symbols-outlined text-primary" data-icon="gavel">gavel</span>
+</div>
+<p class="text-body-md font-body-md text-secondary">
+                                SPECTRA is engineered with deep transparency mechanisms to satisfy the disclosure obligations outlined in Article 50 of the EU AI Act. Users are unambiguously informed when they are interacting with an autonomous AI system. Agentic execution paths are logged, immutable, and fully auditable by relevant authorities upon request.
+                            </p>
+</div>
+<!-- Transparency -->
+<div class="p-8 hover:bg-surface-container-low transition-colors group">
+<div class="flex items-start justify-between mb-4">
+<h4 class="text-label-caps font-label-caps tracking-widest text-primary group-hover:underline">OPERATIONAL TRANSPARENCY</h4>
+<span class="material-symbols-outlined text-primary" data-icon="visibility">visibility</span>
+</div>
+<p class="text-body-md font-body-md text-secondary">
+                                The "Design Shift" interface enforces structural clarity. When the system transitions from Idle (human-driven) to Active (agent-driven), visual state changes are mandatory and overt. We reject obfuscation; raw data streams and execution rationale are surfaced directly to the user interface, ensuring deterministic predictability.
+                            </p>
+</div>
+<!-- HITL / EIP-712 -->
+<div class="p-8 hover:bg-surface-container-low transition-colors group">
+<div class="flex items-start justify-between mb-4">
+<h4 class="text-label-caps font-label-caps tracking-widest text-primary group-hover:underline">HUMAN-IN-THE-LOOP (EIP-712)</h4>
+<span class="material-symbols-outlined text-primary" data-icon="fingerprint">fingerprint</span>
+</div>
+<p class="text-body-md font-body-md text-secondary">
+                                High-impact capital allocations require cryptographic consent. SPECTRA implements EIP-712 typed structured data hashing to enforce Human-in-the-Loop (HITL) constraints. Agents may propose complex multi-step strategies, but execution is physically blocked until explicit, on-chain signature verification is provided by the human principal.
+                            </p>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer (Shared Component) -->
+<footer class="w-full py-8 px-margin-mobile md:px-margin-desktop border-t border-primary dark:border-on-primary bg-surface dark:bg-tertiary flex flex-col md:flex-row justify-between items-center mt-auto">
+<div class="text-label-caps font-label-caps text-primary dark:text-on-primary mb-4 md:mb-0">
+            © 2024 SPECTRA AGENTIC SYSTEMS [ IDLE_MODE ]
+        </div>
+<div class="flex space-x-6">
+<a class="text-label-caps font-label-caps text-secondary dark:text-on-secondary-fixed-variant hover:invert transition-all duration-300" href="#">Documentation</a>
+<a class="text-label-caps font-label-caps text-secondary dark:text-on-secondary-fixed-variant hover:invert transition-all duration-300" href="#">Terminal</a>
+<a class="text-label-caps font-label-caps text-secondary dark:text-on-secondary-fixed-variant hover:invert transition-all duration-300" href="#">Security</a>
+<a class="text-label-caps font-label-caps text-secondary dark:text-on-secondary-fixed-variant hover:invert transition-all duration-300" href="#">Status</a>
+</div>
+</footer>
+</body></html>

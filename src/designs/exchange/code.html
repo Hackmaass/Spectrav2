@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SPECTRA - Exchange</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;600&amp;family=Hanken+Grotesk:wght@400;500;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#5d5f5f",
+                        "on-tertiary": "#ffffff",
+                        "surface-container": "#eeeeee",
+                        "surface": "#f9f9f9",
+                        "on-tertiary-fixed-variant": "#474747",
+                        "inverse-on-surface": "#f1f1f1",
+                        "on-surface": "#1b1b1b",
+                        "surface-tint": "#5e5e5e",
+                        "on-surface-variant": "#4c4546",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed-variant": "#474747",
+                        "surface-bright": "#f9f9f9",
+                        "secondary-fixed": "#e2e2e2",
+                        "on-tertiary-container": "#848484",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed": "#e2e2e2",
+                        "secondary-container": "#dfe0e0",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#454747",
+                        "outline-variant": "#cfc4c5",
+                        "surface-variant": "#e2e2e2",
+                        "on-primary": "#ffffff",
+                        "outline": "#7e7576",
+                        "on-secondary-fixed": "#1a1c1c",
+                        "primary-fixed": "#e2e2e2",
+                        "surface-container-highest": "#e2e2e2",
+                        "surface-container-low": "#f3f3f3",
+                        "inverse-surface": "#303030",
+                        "on-error": "#ffffff",
+                        "on-secondary-container": "#616363",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed": "#1b1b1b",
+                        "background": "#f9f9f9",
+                        "on-primary-container": "#848484",
+                        "surface-dim": "#dadada",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-container": "#1b1b1b",
+                        "primary-fixed-dim": "#c6c6c6",
+                        "inverse-primary": "#c6c6c6",
+                        "on-tertiary-fixed": "#1b1b1b",
+                        "surface-container-high": "#e8e8e8",
+                        "tertiary": "#000000",
+                        "tertiary-fixed-dim": "#c6c6c6",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "on-background": "#1b1b1b",
+                        "primary": "#000000",
+                        "primary-container": "#1b1b1b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "64px",
+                        "margin-mobile": "16px",
+                        "container-max": "1440px",
+                        "unit": "4px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Hanken Grotesk"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "data-mono": ["Geist"],
+                        "label-caps": ["Geist"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "1.5", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "headline-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "600" }],
+                        "headline-md": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "500" }],
+                        "data-mono": ["14px", { "lineHeight": "1.4", "letterSpacing": "0.02em", "fontWeight": "300" }],
+                        "label-caps": ["12px", { "lineHeight": "1.2", "letterSpacing": "0.1em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #f9f9f9; color: #000000; }
+        .data-mono { font-variant-numeric: tabular-nums; }
+        input:focus { outline: none; border-width: 2px; }
+        .swap-input-container:focus-within { border-width: 2px; margin: -1px; }
+    </style>
+</head>
+<body class="font-body-md text-body-md antialiased min-h-screen flex flex-col relative">
+<!-- TopNavBar -->
+<nav class="fixed top-4 left-1/2 -translate-x-1/2 rounded-full border border-primary px-6 py-2 bg-surface/80 backdrop-blur-md flex items-center justify-between w-[90%] max-w-4xl mx-auto z-50 transition-transform">
+<div class="text-label-caps font-label-caps font-bold tracking-widest text-primary">SPECTRA</div>
+<div class="hidden md:flex items-center gap-6">
+<a class="text-label-caps font-label-caps text-secondary hover:text-primary transition-colors duration-200" href="#">Home</a>
+<a class="text-label-caps font-label-caps text-primary border-b border-primary hover:text-primary transition-colors duration-200" href="#">Exchange</a>
+<a class="text-label-caps font-label-caps text-secondary hover:text-primary transition-colors duration-200" href="#">Agent</a>
+<a class="text-label-caps font-label-caps text-secondary hover:text-primary transition-colors duration-200" href="#">NFT Minting</a>
+<a class="text-label-caps font-label-caps text-secondary hover:text-primary transition-colors duration-200" href="#">About</a>
+</div>
+<button class="text-primary hover:text-primary transition-colors duration-200 scale-98 active:scale-95 transition-transform flex items-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">contrast</span>
+</button>
+</nav>
+<!-- Main Content -->
+<main class="flex-grow pt-[120px] pb-24 px-margin-mobile md:px-margin-desktop w-full max-w-container-max mx-auto flex flex-col items-center justify-center min-h-[819px]">
+<div class="w-full max-w-[480px] flex flex-col gap-6">
+<!-- Header -->
+<div class="flex flex-col gap-2 mb-4">
+<h1 class="font-headline-lg text-headline-lg text-primary uppercase">[ EXCHANGE_NODE ]</h1>
+<p class="font-data-mono text-data-mono text-secondary">GASLESS SWAP PROTOCOL INITIALIZED.</p>
+</div>
+<!-- Swap Interface -->
+<div class="w-full flex flex-col gap-unit">
+<!-- You Pay Box -->
+<div class="swap-input-container border border-primary bg-surface p-6 flex flex-col gap-4 relative transition-all">
+<label class="font-label-caps text-label-caps text-primary uppercase">You Pay</label>
+<div class="flex justify-between items-center">
+<input class="bg-transparent border-none text-headline-md font-data-mono w-full p-0 focus:ring-0 focus:border-none tabular-nums placeholder:text-surface-dim" placeholder="0.0" type="text" value="1000.00"/>
+<button class="border border-primary px-4 py-2 font-label-caps text-label-caps flex items-center gap-2 hover:bg-primary hover:text-on-primary transition-colors">
+                            Mock USD <span class="material-symbols-outlined text-[16px]">expand_more</span>
+</button>
+</div>
+<div class="font-data-mono text-data-mono text-secondary tabular-nums">Balance: 14,250.00 MUSD</div>
+</div>
+<!-- Swap Divider -->
+<div class="flex justify-center -my-3 z-10 relative pointer-events-none">
+<div class="bg-surface border border-primary p-2 pointer-events-auto cursor-pointer hover:bg-primary hover:text-on-primary transition-colors inline-flex group">
+<span class="material-symbols-outlined group-hover:rotate-180 transition-transform duration-300">swap_vert</span>
+</div>
+</div>
+<!-- You Receive Box -->
+<div class="swap-input-container border border-primary bg-surface p-6 flex flex-col gap-4 relative transition-all">
+<label class="font-label-caps text-label-caps text-primary uppercase">You Receive</label>
+<div class="flex justify-between items-center">
+<input class="bg-transparent border-none text-headline-md font-data-mono w-full p-0 focus:ring-0 focus:border-none tabular-nums placeholder:text-surface-dim" placeholder="0.0" type="text" value=""/>
+<button class="border border-primary px-4 py-2 font-label-caps text-label-caps flex items-center gap-2 hover:bg-primary hover:text-on-primary transition-colors bg-primary text-on-primary">
+                            Select Token <span class="material-symbols-outlined text-[16px]">expand_more</span>
+</button>
+</div>
+<div class="font-data-mono text-data-mono text-secondary tabular-nums opacity-0">Balance: 0.00</div>
+</div>
+</div>
+<!-- Transaction Details -->
+<div class="border border-primary p-6 flex flex-col gap-4">
+<div class="flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-secondary">Exchange Rate</span>
+<span class="font-data-mono text-data-mono tabular-nums">1 MUSD = --</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-secondary">Gas Fee</span>
+<span class="font-data-mono text-data-mono tabular-nums text-primary font-bold">0 ETH (Settled via UGF)</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-label-caps text-label-caps text-secondary">Slippage Tolerance</span>
+<span class="font-data-mono text-data-mono tabular-nums">0.5%</span>
+</div>
+<div class="flex justify-between items-center pt-4 border-t border-primary">
+<span class="font-label-caps text-label-caps text-secondary">Route</span>
+<span class="font-data-mono text-data-mono tabular-nums flex items-center gap-2">
+                        Spectra AMM <span class="material-symbols-outlined text-[14px]">bolt</span> Optimized
+                    </span>
+</div>
+</div>
+<!-- CTA -->
+<button class="w-full py-4 border border-primary bg-surface text-primary font-label-caps text-label-caps uppercase hover:bg-primary hover:text-on-primary transition-all duration-300">
+                Execute Gasless Swap
+            </button>
+</div>
+</main>
+<!-- Footer -->
+<footer class="w-full py-8 px-margin-mobile md:px-margin-desktop border-t border-primary bg-surface flex flex-col md:flex-row justify-between items-center mt-auto">
+<div class="font-label-caps text-label-caps text-secondary mb-4 md:mb-0 uppercase">© 2024 SPECTRA AGENTIC SYSTEMS [ IDLE_MODE ]</div>
+<div class="flex gap-6">
+<a class="font-label-caps text-label-caps text-secondary hover:invert transition-all duration-300 uppercase" href="#">Documentation</a>
+<a class="font-label-caps text-label-caps text-secondary hover:invert transition-all duration-300 uppercase" href="#">Terminal</a>
+<a class="font-label-caps text-label-caps text-secondary hover:invert transition-all duration-300 uppercase" href="#">Security</a>
+<a class="font-label-caps text-label-caps text-secondary hover:invert transition-all duration-300 uppercase" href="#">Status</a>
+</div>
+</footer>
+</body></html>
