@@ -31,7 +31,7 @@ const DotBg = styled.div`
 
 export default function Agent() {
   return (
-    <PageWrap>
+    <PageWrap className="bg-grid-overlay">
       <DotBg />
       <GlassTerminal />
     </PageWrap>

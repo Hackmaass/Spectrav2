@@ -316,7 +316,7 @@ export default function About() {
   return (
     <Page ref={pageRef}>
       {/* Hero */}
-      <HeroSection>
+      <HeroSection className="bg-grid-overlay">
         <Grid12>
           <ColSpan8>
             <PageTitle>[ TRANSPARENCY &amp; COMPLIANCE ]</PageTitle>

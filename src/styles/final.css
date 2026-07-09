@@ -85,3 +85,35 @@ button.sc-jOpzPJ.fNXlBM {
   min-height: 0;
   padding-top: 8%;
 }
+.gGurXo {
+  min-height: 0;
+}
+.gGurXo {
+  padding: 8%;
+}
+.bg-grid-overlay {
+  position: relative;
+}
+.bg-grid-overlay::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("/grid.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.133;
+  z-index: 0;
+  pointer-events: none;
+}
+.hetvjF {
+  min-height: 0;
+}
+
+nav.sc-jSppWd.khDhFc {
+  border: blue 1px solid;
+  border-radius: 4rem;
+}

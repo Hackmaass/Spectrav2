@@ -514,7 +514,7 @@ export default function CinematicHero() {
   return (
     <Page ref={pageRef}>
       {/* Hero */}
-      <HeroSection>
+      <HeroSection className="bg-grid-overlay">
         <SystemStatus>
           <PulseDot />
           <StatusLabel>System Online</StatusLabel>

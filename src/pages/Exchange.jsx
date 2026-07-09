@@ -91,7 +91,7 @@ export default function Exchange() {
   const selectedAssetLabel = ASSET_OPTIONS.find((asset) => asset.id === selectedAsset)?.label ?? selectedAsset;
 
   return (
-    <main className="spectra-exchange-page">
+    <main className="spectra-exchange-page bg-grid-overlay">
       <div className="spectra-exchange-header">
         <h1 className="spectra-exchange-title">[ EXCHANGE_NODE ]</h1>
         <p className="spectra-exchange-sub">
