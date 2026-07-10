@@ -155,10 +155,47 @@ export default function FeedbackSection() {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    designation: '',
+    company: '',
+    thoughts: ''
+  });
 
-  const handleSubmit = (e) => {
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitted(true);
+    setIsSubmitting(true);
+    
+    try {
+      const response = await fetch('https://formspree.io/f/xojogwna', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ...formData,
+          rating: rating || 'Not rated',
+        }),
+      });
+      
+      if (response.ok) {
+        setSubmitted(true);
+      } else {
+        alert("There was an issue submitting your feedback. Please try again.");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Network error. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (submitted) {
@@ -182,28 +219,28 @@ export default function FeedbackSection() {
           <Grid>
             <FormGroup>
               <Label>Name</Label>
-              <Input type="text" required placeholder="John Doe" />
+              <Input type="text" name="name" value={formData.name} onChange={handleChange} required placeholder="John Doe" />
             </FormGroup>
             <FormGroup>
               <Label>Email</Label>
-              <Input type="email" required placeholder="john@example.com" />
+              <Input type="email" name="email" value={formData.email} onChange={handleChange} required placeholder="john@example.com" />
             </FormGroup>
           </Grid>
           
           <Grid>
             <FormGroup>
               <Label>Designation</Label>
-              <Input type="text" placeholder="e.g. DeFi Trader" />
+              <Input type="text" name="designation" value={formData.designation} onChange={handleChange} placeholder="e.g. DeFi Trader" />
             </FormGroup>
             <FormGroup>
               <Label>Company</Label>
-              <Input type="text" placeholder="Organization" />
+              <Input type="text" name="company" value={formData.company} onChange={handleChange} placeholder="Organization" />
             </FormGroup>
           </Grid>
           
           <FormGroup>
             <Label>Thoughts & Suggestions</Label>
-            <TextArea required placeholder="How can we make Spectra better for you?" />
+            <TextArea name="thoughts" value={formData.thoughts} onChange={handleChange} required placeholder="How can we make Spectra better for you?" />
           </FormGroup>
           
           <FormGroup>
@@ -224,8 +261,8 @@ export default function FeedbackSection() {
             </StarContainer>
           </FormGroup>
           
-          <SubmitButton type="submit">
-            Submit Feedback
+          <SubmitButton type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
             <span className="material-symbols-outlined">send</span>
           </SubmitButton>
         </Form>
