@@ -16,7 +16,7 @@
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const SARVAM_API_BASE = "https://api.sarvam.ai";
+const SARVAM_API_BASE = "/sarvam-api";
 const SARVAM_CHAT_ENDPOINT = `${SARVAM_API_BASE}/v1/chat/completions`;
 
 /**

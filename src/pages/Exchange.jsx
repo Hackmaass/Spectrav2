@@ -8,6 +8,9 @@ const TRADING_VIEW_SYMBOL = {
   ETH: "BINANCE:ETHUSDT",
   SEPOLIA_ETH: "BINANCE:ETHUSDT",
   BASE_SEPOLIA_ETH: "BINANCE:ETHUSDT",
+  USDC: "BINANCE:USDCUSDT",
+  WBTC: "BINANCE:BTCUSDT",
+  XLM: "BINANCE:XLMUSDT",
 };
 
 const ASSET_NAME = {
@@ -15,6 +18,9 @@ const ASSET_NAME = {
   ETH: "Ethereum (ETH)",
   SEPOLIA_ETH: "Sepolia ETH",
   BASE_SEPOLIA_ETH: "Base Sepolia ETH",
+  USDC: "USDC",
+  WBTC: "Wrapped Bitcoin (WBTC)",
+  XLM: "Stellar Lumens (XLM)",
 };
 
 export default function Exchange() {

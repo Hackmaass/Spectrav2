@@ -3,6 +3,8 @@ import { ethers } from 'ethers';
 import { useUGF } from '../../hooks/useUGF';
 import { useAuth } from '../../context/AuthContext';
 import { CONTRACT_ABIS, CONTRACT_ADDRESSES, TOKEN_ADDRESSES, resolveTokenAddress, resolveTokenLabel, ensureBaseSepolia } from '../../config/contracts.js';
+import { getTokenBalance, getTokenDecimals } from '../../lib/stellar/contracts/token';
+import { swapTokens } from '../../lib/stellar/contracts/exchange';
 
 const ERC20_ABI = [
   'function balanceOf(address owner) view returns (uint256)',
@@ -10,10 +12,13 @@ const ERC20_ABI = [
   'function decimals() view returns (uint8)',
 ];
 
-// Removed USDC from ASSET_OPTIONS
 export const ASSET_OPTIONS = [
   { id: 'TYI', label: 'TYI (Mock USD)', tokenAddress: TOKEN_ADDRESSES.TYI, symbol: 'TYI', decimals: 6 },
   { id: 'ETH', label: 'Ethereum (WETH)', tokenAddress: TOKEN_ADDRESSES.WETH, symbol: 'ETHUSDT', decimals: 18 },
+  { id: 'BASE_SEPOLIA_ETH', label: 'Base Sepolia ETH', tokenAddress: TOKEN_ADDRESSES.WETH, symbol: 'ETHUSDT', decimals: 18 },
+  { id: 'USDC', label: 'USDC', tokenAddress: TOKEN_ADDRESSES.USDC, symbol: 'USDC', decimals: 6 },
+  { id: 'WBTC', label: 'Wrapped BTC', tokenAddress: TOKEN_ADDRESSES.WBTC, symbol: 'WBTC', decimals: 8 },
+  { id: 'XLM', label: 'Stellar Lumens (XLM)', tokenAddress: TOKEN_ADDRESSES.TYI, symbol: 'XLM', decimals: 7 },
 ];
 
 const ZERO = '0.00';
@@ -29,8 +34,9 @@ export default function SwapBox({
   onTxHashChange,
   onError,
 }) {
-  const { walletAddress, connectWallet } = useAuth();
+  const { walletAddress, connectWallet, stellarPublicKey, isStellarConnected, connectStellar } = useAuth();
   const account = walletAddress;
+  const stellarAccount = stellarPublicKey;
   const [ethBalance, setEthBalance] = useState(ZERO);
   const [paymentTokenBalance, setPaymentTokenBalance] = useState(ZERO);
   const [rawPaymentTokenBalance, setRawPaymentTokenBalance] = useState('0');
@@ -62,8 +68,27 @@ export default function SwapBox({
     }
   };
 
-  const fetchBalances = async (provider, addr) => {
+  const fetchBalances = async (provider, addr, stellarAddr) => {
     try {
+      if (stellarAddr) {
+        // Fetch Stellar Balances
+        const payTokenAddress = activePayAssetMeta.tokenAddress; // Assuming these resolve to SAC IDs
+        const selectedTokenAddress = activeAssetMeta.tokenAddress;
+        
+        // Mock token addresses for Testnet for now since we haven't mapped SACs in config
+        const mockSacPay = import.meta.env.VITE_SAAS_CONTRACT_ID; // Just using SaaS as dummy for now if missing
+        
+        const payDecimals = await getTokenDecimals(mockSacPay);
+        const payBalanceRaw = await getTokenBalance(mockSacPay, stellarAddr);
+        const payFormatted = Number(ethers.formatUnits(payBalanceRaw, payDecimals)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6});
+        
+        setEthBalance("0.0000"); // XLM balance would go here
+        setPaymentTokenBalance(payFormatted);
+        setSelectedAssetBalance("0.00");
+        setRawPaymentTokenBalance(ethers.formatUnits(payBalanceRaw, payDecimals));
+        return;
+      }
+
       const selectedTokenAddress = activeAssetMeta.tokenAddress;
       const payTokenAddress = activePayAssetMeta.tokenAddress;
       const [ethRaw, paymentContract, selectedContract] = await Promise.all([
@@ -102,21 +127,33 @@ export default function SwapBox({
       throw new Error('No injected wallet found.');
     }
 
+    try {
+      // Always try connecting to Stellar first
+      const stellarAddr = await connectStellar();
+      if (stellarAddr) {
+        await fetchBalances(null, null, stellarAddr);
+        return { isStellar: true, account: stellarAddr };
+      }
+    } catch (err) {
+      console.warn("Stellar connection skipped, falling back to EVM");
+    }
+
     await ensureBaseSepolia();
     const addr = await connectWallet();
     const provider = new ethers.BrowserProvider(window.ethereum);
-    await fetchBalances(provider, addr);
-    return { provider, account: addr };
+    await fetchBalances(provider, addr, null);
+    return { isStellar: false, provider, account: addr };
   };
 
   useEffect(() => {
     const hydrate = async () => {
-      if (!window.ethereum || !walletAddress) return;
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      await fetchBalances(provider, walletAddress);
+      if (!window.ethereum || (!walletAddress && !stellarPublicKey)) return;
+      
+      const provider = window.ethereum && walletAddress ? new ethers.BrowserProvider(window.ethereum) : null;
+      await fetchBalances(provider, walletAddress, stellarPublicKey);
     };
 
-    if (walletAddress) {
+    if (walletAddress || stellarPublicKey) {
       hydrate().catch((error) => console.warn('[SwapBox] Hydration failed:', error));
     } else {
       setEthBalance(ZERO);
@@ -124,7 +161,7 @@ export default function SwapBox({
       setSelectedAssetBalance(ZERO);
       setRawPaymentTokenBalance('0');
     }
-  }, [walletAddress, activePayAsset, activeAsset]);
+  }, [walletAddress, stellarPublicKey, activePayAsset, activeAsset]);
 
   const handleExecuteSwap = async () => {
     if (isExecutingState || sdkLoading) return;
@@ -147,60 +184,96 @@ export default function SwapBox({
         throw new Error('Pay and Receive assets must be different.');
       }
 
-      const { provider } = await connectWalletLocal();
-      const signer = await provider.getSigner();
+      let isStellar = false;
+      let currentAccount = account;
+      let provider = null;
       
-      const decimalsIn = activePayAssetMeta.decimals;
-      const amountIn = ethers.parseUnits(String(safeAmount), decimalsIn);
-      const tokenIn = activePayAssetMeta.tokenAddress;
-      const tokenOut = activeAssetMeta.tokenAddress;
-      const minAmountOut = 0n;
-
-      const iface = new ethers.Interface(CONTRACT_ABIS.SPECTRA_EXCHANGE);
-      const encodedData = iface.encodeFunctionData('swap', [
-        tokenIn,
-        tokenOut,
-        amountIn,
-        minAmountOut
-      ]);
-
-      console.log('[SwapBox] Encoding Payload:', {
-        target: CONTRACT_ADDRESSES.SPECTRA_EXCHANGE,
-        data: encodedData,
-        paymentToken: TOKEN_ADDRESSES.TYI
-      });
-
-      if (activePayAsset !== 'ETH') {
-        const tokenContract = new ethers.Contract(
-          tokenIn,
-          [
-            'function allowance(address owner, address spender) view returns (uint256)',
-            'function approve(address spender, uint256 amount) returns (bool)'
-          ],
-          signer
-        );
-        const ownerAddress = await signer.getAddress();
-        const allowance = await tokenContract.allowance(ownerAddress, CONTRACT_ADDRESSES.SPECTRA_EXCHANGE);
-        if (allowance < amountIn) {
-          setExecutionError(`${activePayAsset} allowance is missing. Sending approval transaction first...`);
-          const approveTx = await tokenContract.approve(CONTRACT_ADDRESSES.SPECTRA_EXCHANGE, ethers.MaxUint256);
-          await approveTx.wait(1);
-          setExecutionError('');
-        }
+      if (stellarAccount) {
+        isStellar = true;
+        currentAccount = stellarAccount;
+      } else if (account) {
+        isStellar = false;
+        currentAccount = account;
+        provider = new ethers.BrowserProvider(window.ethereum);
+      } else {
+        const res = await connectWalletLocal();
+        isStellar = res.isStellar;
+        currentAccount = res.account;
+        provider = res.provider;
       }
+      
+      if (isStellar) {
+        // --- STELLAR EXECUTION PATH ---
+        const tokenInMock = import.meta.env.VITE_SAAS_CONTRACT_ID; // Use SaaS as dummy SAC for now
+        const tokenOutMock = import.meta.env.VITE_SAAS_CONTRACT_ID;
+        
+        // Convert input amount based on token decimals
+        const decimalsIn = activePayAssetMeta.decimals;
+        const amountInParsed = ethers.parseUnits(String(safeAmount), decimalsIn).toString();
 
-      const result = await execute({
-        target: CONTRACT_ADDRESSES.SPECTRA_EXCHANGE,
-        data: encodedData,
-        paymentToken: TOKEN_ADDRESSES.TYI,
-        signer
-      });
+        const result = await swapTokens(
+          currentAccount,
+          tokenInMock,
+          tokenOutMock,
+          amountInParsed,
+          '0'
+        );
+        
+        if (result && result.hash) {
+          onTxHashChange?.(result.hash);
+          fetchBalances(null, null, currentAccount).catch(() => {});
+          setTimeout(() => fetchBalances(null, null, currentAccount).catch(() => {}), 3000);
+        }
+        
+      } else {
+        // --- ETHEREUM EXECUTION PATH ---
+        const signer = await provider.getSigner();
+        
+        const decimalsIn = activePayAssetMeta.decimals;
+        const amountIn = ethers.parseUnits(String(safeAmount), decimalsIn);
+        const tokenIn = activePayAssetMeta.tokenAddress;
+        const tokenOut = activeAssetMeta.tokenAddress;
+        const minAmountOut = 0n;
 
-      if (result && result.userTxHash) {
-        onTxHashChange?.(result.userTxHash);
-        fetchBalances(provider, account).catch(() => {});
-        setTimeout(() => fetchBalances(provider, account).catch(() => {}), 3000);
-        setTimeout(() => fetchBalances(provider, account).catch(() => {}), 6000);
+        const iface = new ethers.Interface(CONTRACT_ABIS.SPECTRA_EXCHANGE);
+        const encodedData = iface.encodeFunctionData('swap', [
+          tokenIn,
+          tokenOut,
+          amountIn,
+          minAmountOut
+        ]);
+
+        if (activePayAsset !== 'ETH') {
+          const tokenContract = new ethers.Contract(
+            tokenIn,
+            [
+              'function allowance(address owner, address spender) view returns (uint256)',
+              'function approve(address spender, uint256 amount) returns (bool)'
+            ],
+            signer
+          );
+          const ownerAddress = await signer.getAddress();
+          const allowance = await tokenContract.allowance(ownerAddress, CONTRACT_ADDRESSES.SPECTRA_EXCHANGE);
+          if (allowance < amountIn) {
+            setExecutionError(`${activePayAsset} allowance is missing. Sending approval transaction first...`);
+            const approveTx = await tokenContract.approve(CONTRACT_ADDRESSES.SPECTRA_EXCHANGE, ethers.MaxUint256);
+            await approveTx.wait(1);
+            setExecutionError('');
+          }
+        }
+
+        const result = await execute({
+          target: CONTRACT_ADDRESSES.SPECTRA_EXCHANGE,
+          data: encodedData,
+          paymentToken: TOKEN_ADDRESSES.TYI,
+          signer
+        });
+
+        if (result && result.userTxHash) {
+          onTxHashChange?.(result.userTxHash);
+          fetchBalances(provider, currentAccount).catch(() => {});
+          setTimeout(() => fetchBalances(provider, currentAccount).catch(() => {}), 3000);
+        }
       }
 
     } catch (swapError) {
@@ -312,10 +385,22 @@ export default function SwapBox({
             <span className="spectra-balance-text">{activeAssetMeta.label} Balance: {selectedAssetBalance}</span>
           )}
         </div>
-        {!account && (
-          <button className="spectra-connect-btn" type="button" onClick={handleConnect}>
-            Connect Wallet
-          </button>
+        {!account && !stellarPublicKey && (
+          <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+            <button className="spectra-connect-btn" type="button" onClick={handleConnect}>
+              Connect Base (ETH)
+            </button>
+            <button className="spectra-connect-btn" type="button" onClick={async () => {
+              try {
+                await connectStellar();
+                setExecutionError('');
+              } catch (e) {
+                setExecutionError(e.message || 'Stellar connect failed');
+              }
+            }} style={{ background: '#000', border: '1px solid #333' }}>
+              Connect Stellar
+            </button>
+          </div>
         )}
       </div>
 

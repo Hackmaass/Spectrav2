@@ -6,6 +6,7 @@ export const CONTRACT_ADDRESSES = {
   SPECTRA_SAAS: '0xa58ce4bac06e8723bbf45f595f2c8dbc0e021100',
   SPECTRA_NFT: '0x45935fa416e2fb9c08e784e4b816b29be4d031b3',
   SPECTRA_EXCHANGE: '0x27aa3d225d062d669279920727a8a1a438f4cd68',
+  SPECTRA_PROFILE: '0x598Ca7A104fa36fb59BB49bC5Ba2813C72978d5b',
 };
 
 export const NETWORK_INFO = {
@@ -109,6 +110,7 @@ export const CONTRACT_ABIS = {
     'function userTransactionCount(address user) view returns (uint256)',
     'function burn(uint256 tokenId) external',
     'function userTokenId(address user) view returns (uint256)',
+    'function hasBadge(address user, uint256 badgeType) view returns (bool)',
   ],
   SPECTRA_SAAS: [
     'function subscribe(uint8 _tier) external',
@@ -116,4 +118,9 @@ export const CONTRACT_ABIS = {
     'function getUserTier(address _user) view returns (uint8)',
     'function getRemainingTransactions(address _user) view returns (uint256)',
   ],
+  SPECTRA_PROFILE: [
+    "function getProfile(address _user) external view returns (tuple(string name, string email, string phone, string bio, uint8 avatarId, bool exists))",
+    "function createProfile(string _name, string _email, string _phone, string _bio, uint8 _avatarId) external",
+    "function updateProfile(string _name, string _email, string _phone, string _bio, uint8 _avatarId) external"
+  ]
 };

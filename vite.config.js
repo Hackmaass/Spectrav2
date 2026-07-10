@@ -5,4 +5,13 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   assetsInclude: ['**/*.splinecode'],
+  server: {
+    proxy: {
+      '/sarvam-api': {
+        target: 'https://api.sarvam.ai',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/sarvam-api/, ''),
+      },
+    },
+  },
 })

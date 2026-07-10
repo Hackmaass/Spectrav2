@@ -1,10 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
+import { useNavigate } from 'react-router-dom';
+import { CONTRACT_ADDRESSES, CONTRACT_ABIS } from '../config/contracts';
+import { connectStellarSnap } from '../lib/stellar/snap';
 
-// Ponytail: Centralized authentication state using native React Context instead of Redux or a complex Web3 onboarding library.
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
+  const navigate = useNavigate();
+
+  // --- Ethereum State ---
   const [walletAddress, setWalletAddress] = useState(() => {
     return localStorage.getItem('spectra_wallet') || '';
   });
@@ -12,18 +17,71 @@ export function AuthProvider({ children }) {
     return !!localStorage.getItem('spectra_wallet');
   });
 
+  // --- Profile & Tier State ---
+  const [profile, setProfile] = useState({ exists: false, data: null });
+  const [userTier, setUserTier] = useState(0); // 0=Alpha, 1=Vector, 2=Nexus
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // --- Stellar State ---
+  const [stellarPublicKey, setStellarPublicKey] = useState(() => {
+    return localStorage.getItem('spectra_stellar_wallet') || '';
+  });
+  const isStellarConnected = !!stellarPublicKey;
+
+  const fetchProfileAndTier = useCallback(async (address) => {
+    if (!address || !window.ethereum) return;
+    setIsLoadingProfile(true);
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      
+      // Fetch Profile
+      const profileContract = new ethers.Contract(CONTRACT_ADDRESSES.SPECTRA_PROFILE, CONTRACT_ABIS.SPECTRA_PROFILE, provider);
+      const fetchedProfile = await profileContract.getProfile(address);
+      setProfile({ exists: fetchedProfile.exists, data: fetchedProfile });
+
+      // Fetch Tier
+      const saasContract = new ethers.Contract(CONTRACT_ADDRESSES.SPECTRA_SAAS, CONTRACT_ABIS.SPECTRA_SAAS, provider);
+      const fetchedTier = await saasContract.getUserTier(address);
+      
+      // Fetch NFT Badges
+      const nftContract = new ethers.Contract(CONTRACT_ADDRESSES.SPECTRA_NFT, CONTRACT_ABIS.SPECTRA_NFT, provider);
+      const hasVector = await nftContract.hasBadge(address, 2).catch(() => false);
+      const hasNexus = await nftContract.hasBadge(address, 3).catch(() => false);
+      
+      let nftTier = 0;
+      if (hasNexus) nftTier = 2;
+      else if (hasVector) nftTier = 1;
+
+      setUserTier(Math.max(Number(fetchedTier), nftTier));
+    } catch (err) {
+      console.warn('[AuthContext] Failed to fetch profile/tier data:', err);
+      setProfile({ exists: false, data: null });
+      setUserTier(0);
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  }, []);
+
   const login = useCallback((address) => {
     const normalized = address.toLowerCase();
     localStorage.setItem('spectra_wallet', normalized);
     setWalletAddress(normalized);
     setIsLoggedIn(true);
-  }, []);
+    fetchProfileAndTier(normalized);
+  }, [fetchProfileAndTier]);
 
   const logout = useCallback(() => {
     localStorage.removeItem('spectra_wallet');
+    localStorage.removeItem('spectra_stellar_wallet');
     setWalletAddress('');
     setIsLoggedIn(false);
-  }, []);
+    setStellarPublicKey('');
+    setProfile({ exists: false, data: null });
+    setUserTier(0);
+    // Instant redirect to login when session ends
+    navigate('/login');
+  }, [navigate]);
 
   const connectWallet = useCallback(async () => {
     if (!window.ethereum) {
@@ -37,9 +95,27 @@ export function AuthProvider({ children }) {
     throw new Error('No accounts returned from wallet.');
   }, [login]);
 
+  const connectStellar = useCallback(async () => {
+    try {
+      const pubKey = await connectStellarSnap();
+      if (pubKey) {
+        localStorage.setItem('spectra_stellar_wallet', pubKey);
+        setStellarPublicKey(pubKey);
+        return pubKey;
+      }
+    } catch (err) {
+      console.error('[AuthContext] connectStellar error:', err);
+      throw err;
+    }
+  }, []);
+
+  // Initial load check
   useEffect(() => {
     const checkWalletConnection = async () => {
-      if (!window.ethereum) return;
+      if (!window.ethereum) {
+        setIsInitialized(true);
+        return;
+      }
       try {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const accounts = await provider.send('eth_accounts', []);
@@ -50,6 +126,9 @@ export function AuthProvider({ children }) {
             const currentAccount = accounts[0].toLowerCase();
             if (currentAccount !== savedWallet) {
               login(currentAccount);
+            } else {
+              // Ensure profile is fetched on reload if already logged in
+              await fetchProfileAndTier(currentAccount);
             }
           } else {
             // MetaMask is locked or disconnected, log out
@@ -58,6 +137,8 @@ export function AuthProvider({ children }) {
         }
       } catch (err) {
         console.error('[AuthContext] checkWalletConnection error:', err);
+      } finally {
+        setIsInitialized(true);
       }
     };
 
@@ -66,7 +147,6 @@ export function AuthProvider({ children }) {
     if (window.ethereum) {
       const handleAccountsChanged = (accounts) => {
         const savedWallet = localStorage.getItem('spectra_wallet');
-        // Only update or logout if we were previously logged in (avoids auto-login on accountsChanged when logged out)
         if (savedWallet) {
           if (accounts.length > 0) {
             login(accounts[0]);
@@ -81,10 +161,29 @@ export function AuthProvider({ children }) {
         window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
       };
     }
-  }, [login, logout]);
+  }, [login, logout, fetchProfileAndTier]);
+
+  const value = {
+    // Ethereum
+    isLoggedIn,
+    walletAddress,
+    login,
+    logout,
+    connectWallet,
+    // Profile & SaaS
+    profile,
+    userTier,
+    isLoadingProfile,
+    isInitialized,
+    fetchProfileAndTier,
+    // Stellar
+    stellarPublicKey,
+    isStellarConnected,
+    connectStellar
+  };
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, walletAddress, login, logout, connectWallet }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

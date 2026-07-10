@@ -9,7 +9,8 @@ const PageWrap = styled.main`
   justify-content: center;
   padding: 120px 16px 64px;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   min-height: 100vh;
   width: 100%;
   max-width: 1440px;
