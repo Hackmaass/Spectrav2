@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/sarvam-api/:path*", "destination": "https://api.sarvam.ai/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
