@@ -21,6 +21,17 @@ export const ASSET_OPTIONS = [
   { id: 'XLM', label: 'Stellar Lumens (XLM)', tokenAddress: TOKEN_ADDRESSES.TYI, symbol: 'XLM', decimals: 7 },
 ];
 
+const SAC_MAP = {
+  'TYI': import.meta.env.VITE_STELLAR_SAC_TYI || 'CDLZFC3SYJYDZT7K67VZ75HPJVIEWBEJLY4U7O76T4N2S27ZEMB6M2XF',
+  'USDC': import.meta.env.VITE_STELLAR_SAC_USDC || 'CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA',
+  'XLM': import.meta.env.VITE_STELLAR_SAC_XLM || 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC',
+  'EURC': import.meta.env.VITE_STELLAR_SAC_EURC || 'CCUUDM434BMZMYWYDITHFXHDMIVTGGD6T2I5UKNX5BSLXLW7HVR4MCGZ'
+};
+
+const resolveSacAddress = (assetId) => {
+  return SAC_MAP[assetId] || SAC_MAP['TYI'];
+};
+
 const ZERO = '0.00';
 
 export default function SwapBox({
@@ -72,14 +83,10 @@ export default function SwapBox({
     try {
       if (stellarAddr) {
         // Fetch Stellar Balances
-        const payTokenAddress = activePayAssetMeta.tokenAddress; // Assuming these resolve to SAC IDs
-        const selectedTokenAddress = activeAssetMeta.tokenAddress;
+        const paySacAddress = resolveSacAddress(activePayAssetMeta.id);
         
-        // Mock token addresses for Testnet for now since we haven't mapped SACs in config
-        const mockSacPay = import.meta.env.VITE_SAAS_CONTRACT_ID; // Just using SaaS as dummy for now if missing
-        
-        const payDecimals = await getTokenDecimals(mockSacPay);
-        const payBalanceRaw = await getTokenBalance(mockSacPay, stellarAddr);
+        const payDecimals = await getTokenDecimals(paySacAddress);
+        const payBalanceRaw = await getTokenBalance(paySacAddress, stellarAddr);
         const payFormatted = Number(ethers.formatUnits(payBalanceRaw, payDecimals)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6});
         
         setEthBalance("0.0000"); // XLM balance would go here
@@ -204,8 +211,8 @@ export default function SwapBox({
       
       if (isStellar) {
         // --- STELLAR EXECUTION PATH ---
-        const tokenInMock = import.meta.env.VITE_SAAS_CONTRACT_ID; // Use SaaS as dummy SAC for now
-        const tokenOutMock = import.meta.env.VITE_SAAS_CONTRACT_ID;
+        const tokenInSAC = resolveSacAddress(activePayAssetMeta.id);
+        const tokenOutSAC = resolveSacAddress(activeAssetMeta.id);
         
         // Convert input amount based on token decimals
         const decimalsIn = activePayAssetMeta.decimals;
@@ -213,8 +220,8 @@ export default function SwapBox({
 
         const result = await swapTokens(
           currentAccount,
-          tokenInMock,
-          tokenOutMock,
+          tokenInSAC,
+          tokenOutSAC,
           amountInParsed,
           '0'
         );

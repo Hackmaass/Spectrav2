@@ -635,6 +635,7 @@ export default function ProfileDashboard() {
         }
         setHasProfile(true);
         setIsEditing(false);
+        if (fetchProfileAndTier) await fetchProfileAndTier(activeAccount, true);
         if (isOnboard) navigate('/', { replace: true });
       } else {
         // --- ETHEREUM PROFILE UPDATE ---
@@ -651,7 +652,7 @@ export default function ProfileDashboard() {
         }
         
         await tx.wait();
-        if (fetchProfileAndTier) await fetchProfileAndTier(walletAddress);
+        if (fetchProfileAndTier) await fetchProfileAndTier(walletAddress, false);
         setIsEditing(false);
         if (isOnboard) {
           navigate('/', { replace: true });

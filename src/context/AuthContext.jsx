@@ -14,7 +14,7 @@ export function AuthProvider({ children }) {
     return localStorage.getItem('spectra_wallet') || '';
   });
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return !!localStorage.getItem('spectra_wallet');
+    return !!localStorage.getItem('spectra_wallet') || !!localStorage.getItem('spectra_stellar_wallet');
   });
 
   // --- Profile & Tier State ---
@@ -29,31 +29,40 @@ export function AuthProvider({ children }) {
   });
   const isStellarConnected = !!stellarPublicKey;
 
-  const fetchProfileAndTier = useCallback(async (address) => {
-    if (!address || !window.ethereum) return;
+  const fetchProfileAndTier = useCallback(async (address, isStellar = false) => {
+    if (!address) return;
     setIsLoadingProfile(true);
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      
-      // Fetch Profile
-      const profileContract = new ethers.Contract(CONTRACT_ADDRESSES.SPECTRA_PROFILE, CONTRACT_ABIS.SPECTRA_PROFILE, provider);
-      const fetchedProfile = await profileContract.getProfile(address);
-      setProfile({ exists: fetchedProfile.exists, data: fetchedProfile });
-
-      // Fetch Tier
-      const saasContract = new ethers.Contract(CONTRACT_ADDRESSES.SPECTRA_SAAS, CONTRACT_ABIS.SPECTRA_SAAS, provider);
-      const fetchedTier = await saasContract.getUserTier(address);
-      
-      // Fetch NFT Badges
-      const nftContract = new ethers.Contract(CONTRACT_ADDRESSES.SPECTRA_NFT, CONTRACT_ABIS.SPECTRA_NFT, provider);
-      const hasVector = await nftContract.hasBadge(address, 2).catch(() => false);
-      const hasNexus = await nftContract.hasBadge(address, 3).catch(() => false);
-      
-      let nftTier = 0;
-      if (hasNexus) nftTier = 2;
-      else if (hasVector) nftTier = 1;
-
-      setUserTier(Math.max(Number(fetchedTier), nftTier));
+      if (isStellar) {
+        // Fetch from Soroban
+        const fetchedProfile = await getProfile(address);
+        const fetchedTier = await getStellarUserTier(address);
+        setProfile({ exists: !!fetchedProfile, data: fetchedProfile });
+        setUserTier(Number(fetchedTier) || 0);
+      } else {
+        if (!window.ethereum) return;
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        
+        // Fetch Profile
+        const profileContract = new ethers.Contract(CONTRACT_ADDRESSES.SPECTRA_PROFILE, CONTRACT_ABIS.SPECTRA_PROFILE, provider);
+        const fetchedProfile = await profileContract.getProfile(address);
+        setProfile({ exists: fetchedProfile.exists, data: fetchedProfile });
+  
+        // Fetch Tier
+        const saasContract = new ethers.Contract(CONTRACT_ADDRESSES.SPECTRA_SAAS, CONTRACT_ABIS.SPECTRA_SAAS, provider);
+        const fetchedTier = await saasContract.getUserTier(address);
+        
+        // Fetch NFT Badges
+        const nftContract = new ethers.Contract(CONTRACT_ADDRESSES.SPECTRA_NFT, CONTRACT_ABIS.SPECTRA_NFT, provider);
+        const hasVector = await nftContract.hasBadge(address, 2).catch(() => false);
+        const hasNexus = await nftContract.hasBadge(address, 3).catch(() => false);
+        
+        let nftTier = 0;
+        if (hasNexus) nftTier = 2;
+        else if (hasVector) nftTier = 1;
+  
+        setUserTier(Math.max(Number(fetchedTier), nftTier));
+      }
     } catch (err) {
       console.warn('[AuthContext] Failed to fetch profile/tier data:', err);
       setProfile({ exists: false, data: null });
@@ -68,7 +77,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem('spectra_wallet', normalized);
     setWalletAddress(normalized);
     setIsLoggedIn(true);
-    fetchProfileAndTier(normalized);
+    fetchProfileAndTier(normalized, false);
   }, [fetchProfileAndTier]);
 
   const logout = useCallback(() => {
@@ -101,17 +110,31 @@ export function AuthProvider({ children }) {
       if (pubKey) {
         localStorage.setItem('spectra_stellar_wallet', pubKey);
         setStellarPublicKey(pubKey);
+        setIsLoggedIn(true);
+        fetchProfileAndTier(pubKey, true);
         return pubKey;
       }
     } catch (err) {
       console.error('[AuthContext] connectStellar error:', err);
       throw err;
     }
-  }, []);
+  }, [fetchProfileAndTier]);
 
   // Initial load check
   useEffect(() => {
     const checkWalletConnection = async () => {
+      let isAnyConnected = false;
+
+      // 1. Check Stellar
+      const savedStellarWallet = localStorage.getItem('spectra_stellar_wallet');
+      if (savedStellarWallet) {
+        setStellarPublicKey(savedStellarWallet);
+        setIsLoggedIn(true);
+        await fetchProfileAndTier(savedStellarWallet, true);
+        isAnyConnected = true;
+      }
+
+      // 2. Check EVM
       if (!window.ethereum) {
         setIsInitialized(true);
         return;
@@ -128,11 +151,17 @@ export function AuthProvider({ children }) {
               login(currentAccount);
             } else {
               // Ensure profile is fetched on reload if already logged in
-              await fetchProfileAndTier(currentAccount);
+              await fetchProfileAndTier(currentAccount, false);
             }
+            isAnyConnected = true;
           } else {
-            // MetaMask is locked or disconnected, log out
-            logout();
+            // MetaMask is locked or disconnected on EVM
+            if (!isAnyConnected) {
+              logout();
+            } else {
+              localStorage.removeItem('spectra_wallet');
+              setWalletAddress('');
+            }
           }
         }
       } catch (err) {

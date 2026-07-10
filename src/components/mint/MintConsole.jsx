@@ -3,6 +3,9 @@ import { ethers } from 'ethers';
 import { useUGF } from '../../hooks/useUGF';
 import { useAuth } from '../../context/AuthContext';
 import { CONTRACT_ABIS, CONTRACT_ADDRESSES, TOKEN_ADDRESSES } from '../../config/contracts.js';
+import { subscribe, getUserTier } from '../../lib/stellar/contracts/saas';
+import { mintVectorBadge, mintNexusBadge, userTokenId as getStellarUserTokenId, burn as stellarBurn } from '../../lib/stellar/contracts/nft';
+import { getTokenBalance, getTokenDecimals } from '../../lib/stellar/contracts/token';
 
 const ERC20_ABI = [
   'function balanceOf(address owner) view returns (uint256)',
@@ -59,8 +62,8 @@ export default function MintConsole() {
   const [txHash, setTxHash] = useState('');
   const [userTier, setUserTier] = useState(-1);
   const [ownedTokenId, setOwnedTokenId] = useState(0);
-  const { walletAddress, connectWallet } = useAuth();
-  const account = walletAddress;
+  const { walletAddress, connectWallet, stellarPublicKey, isStellarConnected, connectStellar } = useAuth();
+  const account = isStellarConnected ? stellarPublicKey : walletAddress;
 
   const { execute, loading: sdkLoading, step: sdkStep } = useUGF();
 
@@ -68,6 +71,25 @@ export default function MintConsole() {
 
   const fetchBalances = async (provider, addr) => {
     try {
+      if (isStellarConnected) {
+        // Fetch Stellar balances
+        const mockSacPay = import.meta.env.VITE_SAAS_CONTRACT_ID || '';
+        if (mockSacPay) {
+          const decimals = await getTokenDecimals(mockSacPay);
+          const mockUsdRaw = await getTokenBalance(mockSacPay, addr);
+          const mockUsdFormatted = Number(ethers.formatUnits(mockUsdRaw, decimals)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          setMockUsdBalance(mockUsdFormatted);
+        }
+        
+        const tier = await getUserTier(addr);
+        const tokenId = await getStellarUserTokenId(addr);
+        
+        setEthBalance("0.0000"); // XLM
+        setUserTier(tier);
+        setOwnedTokenId(tokenId);
+        return;
+      }
+
       const [ethRaw, mockUsdContract, saasContract] = await Promise.all([
         provider.getBalance(addr).catch(() => 0n),
         Promise.resolve(new ethers.Contract(TOKEN_ADDRESSES.TYI, ERC20_ABI, provider)),
@@ -139,20 +161,28 @@ export default function MintConsole() {
       throw new Error('No injected wallet found.');
     }
 
+    try {
+      const stellarAddr = await connectStellar();
+      if (stellarAddr) {
+        await fetchBalances(null, stellarAddr);
+        return { isStellar: true, account: stellarAddr };
+      }
+    } catch (e) {}
+
     await ensureBaseSepolia();
     const addr = await connectWallet();
     const provider = new ethers.BrowserProvider(window.ethereum);
     await fetchBalances(provider, addr);
-    return { provider, account: addr };
+    return { isStellar: false, provider, account: addr };
   };
 
   useEffect(() => {
     const hydrate = async () => {
-      if (!window.ethereum || !walletAddress) return;
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      await fetchBalances(provider, walletAddress);
+      if (!window.ethereum && !stellarPublicKey) return;
+      const provider = window.ethereum ? new ethers.BrowserProvider(window.ethereum) : null;
+      await fetchBalances(provider, account);
     };
-    if (walletAddress) {
+    if (account) {
       hydrate().catch(e => console.warn('[MintConsole] Hydration failed:', e));
     } else {
       setEthBalance(ZERO);
@@ -160,7 +190,7 @@ export default function MintConsole() {
       setUserTier(-1);
       setOwnedTokenId(0);
     }
-  }, [walletAddress]);
+  }, [account, isStellarConnected]);
 
   const handleMint = async () => {
     if (isMinting || sdkLoading) return;
@@ -176,8 +206,27 @@ export default function MintConsole() {
       }
 
       setStatus('CONNECTING');
-      const { provider } = await connectWalletLocal();
-      const signer = await provider.getSigner();
+      const { provider, isStellar } = await connectWalletLocal();
+      
+      if (isStellar) {
+        // --- STELLAR EXECUTION PATH ---
+        setStatus('SUBSCRIBING');
+        await subscribe(account, tier.plan);
+        
+        setStatus('MINTING_BADGE');
+        let mintResult;
+        if (tier.id === 'vector') mintResult = await mintVectorBadge(account);
+        else if (tier.id === 'nexus') mintResult = await mintNexusBadge(account);
+        
+        if (mintResult && mintResult.hash) {
+          setTxHash(mintResult.hash);
+          setStatus('MINTED');
+          await fetchBalances(null, account);
+        }
+        
+      } else {
+        // --- EVM EXECUTION PATH ---
+        const signer = await provider.getSigner();
       const token = new ethers.Contract(TOKEN_ADDRESSES.TYI, ERC20_ABI, signer);
       const decimals = await token.decimals();
       const feeAmount = ethers.parseUnits(String(tier.deduction), decimals);
@@ -228,6 +277,7 @@ export default function MintConsole() {
         setStatus('MINTED');
         await fetchBalances(provider, account);
       }
+      }
 
     } catch (err) {
       console.error('[MintConsole] Execution Error:', err);
@@ -253,8 +303,18 @@ export default function MintConsole() {
     setStatus('CANCELLING');
 
     try {
-      const { provider } = await connectWalletLocal();
-      const signer = await provider.getSigner();
+      const { provider, isStellar } = await connectWalletLocal();
+      
+      if (isStellar) {
+        // --- STELLAR EXECUTION PATH ---
+        // Note: For now, we only burn the NFT since cancelSubscription is not exposed on saas.js yet
+        if (ownedTokenId > 0) {
+          setStatus('BURNING_NFT');
+          await stellarBurn(account, ownedTokenId);
+        }
+      } else {
+        // --- EVM EXECUTION PATH ---
+        const signer = await provider.getSigner();
 
       // Step 1: Cancel subscription on SaaS Contract
       setStatus('CANCELLING_SAAS');
@@ -268,6 +328,7 @@ export default function MintConsole() {
         const nft = new ethers.Contract(CONTRACT_ADDRESSES.SPECTRA_NFT, CONTRACT_ABIS.SPECTRA_NFT, signer);
         const burnTx = await nft.burn(ownedTokenId);
         await burnTx.wait(1);
+      }
       }
 
       setStatus('CANCELLED');

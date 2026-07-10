@@ -1,5 +1,6 @@
 import { rpc, Networks, TransactionBuilder, Contract, Keypair, xdr } from '@stellar/stellar-sdk';
 import { signStellarTransaction } from './snap';
+import { submitRelayedTransaction } from './relayer';
 
 const RPC_URL = import.meta.env.VITE_STELLAR_RPC_URL || 'https://soroban-testnet.stellar.org';
 const IS_TESTNET = import.meta.env.VITE_STELLAR_NETWORK !== 'mainnet';
@@ -63,10 +64,8 @@ export async function invokeContract(contractId, method, args, publicKey) {
   // 5. Sign via MetaMask Stellar Snap
   const signedXdr = await signStellarTransaction(assembledTx.toXDR(), IS_TESTNET);
 
-  // 6. Submit to network
-  const sendResponse = await server.sendTransaction(
-    TransactionBuilder.fromXDR(signedXdr, networkPassphrase)
-  );
+  // 6. Submit via relayer (gasless fee-bump transaction)
+  const sendResponse = await submitRelayedTransaction(signedXdr);
 
   if (sendResponse.status === 'ERROR') {
     throw new Error(`Transaction rejected: ${JSON.stringify(sendResponse.errorResult)}`);
