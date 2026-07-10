@@ -13,13 +13,16 @@ const Section = styled.section`
 `;
 
 const Container = styled.div`
-  max-width: 800px;
-  margin: 0 auto;
-  border: 1px solid var(--border-color);
   background: var(--bg-surface);
-  padding: 48px;
   position: relative;
   overflow: hidden;
+
+  box-shadow: -9px 9px 0 7px blue;
+  padding: 3% 8%;
+  margin: 1% 6%;
+  border: 1px solid white;
+  max-width: none;
+  border-radius: 6rem;
 `;
 
 const Title = styled.h2`
