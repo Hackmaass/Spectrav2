@@ -12,6 +12,9 @@ const Mint     = lazy(() => import('./pages/Mint'));
 const Journal  = lazy(() => import('./pages/Journal'));
 const Admin    = lazy(() => import('./pages/Admin'));
 const Profile  = lazy(() => import('./pages/ProfileDashboard'));
+const Login    = lazy(() => import('./pages/Login'));
+
+import RequireAuth from './components/layout/RequireAuth';
 
 const LoaderWrap = styled.div`
   height: 100vh;
@@ -34,14 +37,18 @@ export default function App() {
     <MainLayout>
       <Suspense fallback={<Loader />}>
         <Routes>
+          {/* Public Routes */}
           <Route path="/"         element={<Home />}     />
           <Route path="/about"    element={<About />}    />
-          <Route path="/agent"    element={<Agent />}    />
           <Route path="/exchange" element={<Exchange />} />
-          <Route path="/mint"     element={<Mint />}     />
           <Route path="/journal"  element={<Journal />}  />
           <Route path="/admin"    element={<Admin />}    />
-          <Route path="/profile"  element={<Profile />}  />
+          <Route path="/login"    element={<Login />}    />
+
+          {/* Protected Routes */}
+          <Route path="/agent" element={<RequireAuth><Agent /></RequireAuth>} />
+          <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
+          <Route path="/mint" element={<RequireAuth><Mint /></RequireAuth>} />
         </Routes>
       </Suspense>
     </MainLayout>

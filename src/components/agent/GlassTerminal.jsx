@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { ethers } from 'ethers';
 import { tryParseDefiIntent } from '../../api/sarvamAgent.js';
 import { CONTRACT_ABIS, CONTRACT_ADDRESSES, TOKEN_ADDRESSES, resolveTokenAddress } from '../../config/contracts.js';
 import { useUGF } from '../../hooks/useUGF';
 import { useAuth } from '../../context/AuthContext';
+import { useRateLimit } from '../../context/RateLimitContext';
 
 const Card = styled.section`
   width: 100%;
@@ -16,6 +17,18 @@ const Card = styled.section`
   -webkit-backdrop-filter: blur(16px);
   box-shadow: 0 20px 70px rgba(176, 38, 255, 0.14);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  resize: vertical;
+  min-height: 400px;
+  max-height: 90vh;
+
+  &::-webkit-resizer {
+    background-color: transparent;
+    border-style: solid;
+    border-width: 0 0 14px 14px;
+    border-color: transparent transparent rgba(176, 38, 255, 0.8) transparent;
+  }
 `;
 
 const Header = styled.header`
@@ -51,8 +64,8 @@ const Dots = styled.div`
 `;
 
 const Body = styled.div`
-  min-height: 520px;
-  max-height: 70vh;
+  flex: 1;
+  min-height: 150px;
   overflow-y: auto;
   padding: 22px;
   display: flex;
@@ -215,7 +228,7 @@ const ExecuteButton = styled.button`
 `;
 
 const Footer = styled.form`
-  height: 74px;
+  height: 54px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
@@ -343,7 +356,7 @@ const LayoutGrid = styled.div`
   gap: 20px;
   width: 100%;
   max-width: 1280px;
-  align-items: stretch;
+  align-items: flex-start;
 
   @media (max-width: 1024px) {
     flex-direction: column;
@@ -552,20 +565,31 @@ function buildTypedData(intent, chainId) {
 export default function GlassTerminal() {
   const { execute, loading: sdkLoading, error: sdkError, step: sdkStep } = useUGF();
   const { walletAddress, connectWallet } = useAuth();
+  const { consumeRequest } = useRateLimit();
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
   const [intent, setIntent] = useState(null);
+  const [flowState, setFlowState] = useState('IDLE');
   const [userTier, setUserTier] = useState(0);
   const [remainingTxs, setRemainingTxs] = useState(10);
-  const [walletEthBalance, setWalletEthBalance] = useState('0.0000');
-  const [walletUsdBalance, setWalletUsdBalance] = useState('0.00');
-  const [walletUsdcBalance, setWalletUsdcBalance] = useState('0.00');
+  const [tokenBalances, setTokenBalances] = useState({});
   const [walletNonce, setWalletNonce] = useState(0);
   const [walletAllowance, setWalletAllowance] = useState('0.00');
   const [error, setError] = useState('');
   const [signature, setSignature] = useState('');
+  const [hasHydratedWallet, setHasHydratedWallet] = useState(false);
+
+  const TRADING_VIEW_SYMBOL = {
+    TYI: "BINANCE:USDTUSD",
+    ETH: "BINANCE:ETHUSDT",
+    SEPOLIA_ETH: "BINANCE:ETHUSDT",
+    BASE_SEPOLIA_ETH: "BINANCE:ETHUSDT",
+    USDC: "BINANCE:USDCUSDT",
+    WBTC: "BINANCE:BTCUSDT",
+    XLM: "BINANCE:XLMUSDT",
+  };
 
   const statusText = useMemo(() => {
     if (sdkLoading) {
@@ -576,89 +600,91 @@ export default function GlassTerminal() {
       if (sdkStep === 'EXECUTING_ON_CHAIN') return 'UGF: Finalizing Intent Execution...';
       return `UGF: ${sdkStep}...`;
     }
-    if (isSigning) {
-      return 'Awaiting wallet signature...';
-    }
-    if (signature) {
-      return `Signature captured: ${signature.slice(0, 16)}...`;
-    }
-    if (walletAddress) {
-      return `Wallet connected: ${walletAddress}`;
-    }
+    if (isSigning) return 'Awaiting wallet signature...';
+    if (signature) return `Signature captured: ${signature.slice(0, 16)}...`;
+    if (walletAddress) return `Wallet connected: ${walletAddress}`;
     return 'Wallet disconnected';
   }, [sdkLoading, sdkStep, isSigning, signature, walletAddress]);
 
   const totalAssetValueUsd = useMemo(() => {
-    const tyiVal = normalizeAmount(walletUsdBalance) * 1.00;
-    const usdcVal = normalizeAmount(walletUsdcBalance) * 1.00;
-    const ethVal = normalizeAmount(walletEthBalance) * 3500.00;
-    return tyiVal + usdcVal + ethVal;
-  }, [walletUsdBalance, walletUsdcBalance, walletEthBalance]);
+    let total = 0;
+    Object.entries(tokenBalances).forEach(([symbol, bal]) => {
+      const val = normalizeAmount(bal);
+      if (symbol === 'ETH') total += val * 3500.00;
+      else if (symbol === 'WBTC') total += val * 60000.00;
+      else total += val * 1.00;
+    });
+    return total;
+  }, [tokenBalances]);
 
   const walletSnapshot = useMemo(() => {
-    if (!walletAddress) {
-      return 'Connect a wallet to fetch live balances.';
-    }
-
-    return `Wallet ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)} | ETH ${walletEthBalance} | TYI ${walletUsdBalance} | USDC ${walletUsdcBalance} | nonce ${walletNonce}`;
-  }, [walletAddress, walletEthBalance, walletUsdBalance, walletUsdcBalance, walletNonce]);
+    if (!walletAddress) return 'Connect a wallet to fetch live balances.';
+    const bals = Object.entries(tokenBalances).map(([s, b]) => `${s} ${b}`).join(' | ');
+    return `Wallet ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)} | ${bals} | nonce ${walletNonce}`;
+  }, [walletAddress, tokenBalances, walletNonce]);
 
   const suggestionChips = useMemo(() => {
-    const ethBalance = normalizeAmount(walletEthBalance);
-    const tyiBalance = normalizeAmount(walletUsdBalance);
-    const tyiAllowance = normalizeAmount(walletAllowance);
-
-    if (!walletAddress) {
-      return [
-        'connect wallet to load live suggestions',
-        'check wallet balances',
-        'request a live swap quote',
-      ];
-    }
-
-    if (tyiBalance <= 0) {
-      return [
-        'Claim TYI from Faucet',
-        'check live UGF routing readiness',
-        'top up Base Sepolia ETH for gas'
-      ];
-    }
-
+    if (!walletAddress) return ['connect wallet to load live suggestions', 'check wallet balances', 'request a live swap quote'];
+    
     const chips = [];
+    Object.entries(tokenBalances).forEach(([symbol, bal]) => {
+      const amount = normalizeAmount(bal);
+      if (amount <= 0) return;
+      
+      const quarter = amount * 0.25;
+      const half = amount * 0.5;
+      
+      if (symbol === 'ETH') {
+        chips.push(`swap ${formatSuggestionAmount(quarter)} ETH to XLM`);
+        chips.push(`swap ${formatSuggestionAmount(half)} ETH to TYI`);
+      } else if (symbol === 'TYI') {
+        chips.push(`swap ${formatSuggestionAmount(quarter)} TYI to ETH`);
+        chips.push(`swap ${formatSuggestionAmount(half)} TYI to USDC`);
+      } else {
+        chips.push(`swap ${formatSuggestionAmount(quarter)} ${symbol} to XLM`);
+      }
+    });
 
-    if (tyiBalance > 0) {
-      const quarter = tyiBalance * 0.25;
-      const tenth = tyiBalance * 0.1;
-      const half = tyiBalance * 0.5;
-
-      chips.push(`swap ${formatSuggestionAmount(quarter)} TYI to ETH`);
-      chips.push(`swap ${formatSuggestionAmount(tenth)} TYI to USDC`);
-      chips.push(`swap ${formatSuggestionAmount(half)} TYI to ETH`);
-    }
-
-    if (ethBalance > 0) {
-      chips.push(`reserve ${formatSuggestionAmount(Math.min(ethBalance, ethBalance * 0.1))} ETH for gas`);
-    } else {
-      chips.push('top up Base Sepolia ETH for gas');
-    }
-
-    if (tyiAllowance <= 0 && tyiBalance > 0) {
+    if (normalizeAmount(tokenBalances.TYI) > 0 && normalizeAmount(walletAllowance) <= 0) {
       chips.push('approve TYI for the exchange route');
     }
 
+    if (chips.length === 0) {
+      chips.push('Claim TYI from Faucet');
+      chips.push('top up Base Sepolia ETH for gas');
+      chips.push('check live UGF routing readiness');
+    }
+
     return chips.slice(0, 4);
-  }, [walletAddress, walletEthBalance, walletUsdBalance, walletAllowance, walletNonce]);
+  }, [walletAddress, tokenBalances, walletAllowance]);
 
   const hasInsufficientBalance = useMemo(() => {
     if (!intent) return false;
     const needed = normalizeAmount(intent.amount);
-    const balance = normalizeAmount(walletUsdBalance);
+    const token = String(intent.token || 'TYI').toUpperCase();
+    const balance = normalizeAmount(tokenBalances[token] || 0);
     return needed > balance;
-  }, [intent, walletUsdBalance]);
+  }, [intent, tokenBalances]);
 
-  const pushMessage = (from, content) => {
+  const pushMessage = useCallback((from, content) => {
     setMessages((prev) => [...prev, { from, content }]);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (walletAddress && messages.length === 0 && !isLoading && hasHydratedWallet) {
+      const balanceStrings = Object.entries(tokenBalances)
+        .filter(([_, bal]) => Number(bal) > 0)
+        .map(([symbol, bal]) => `${bal} ${symbol}`);
+      
+      const balanceText = balanceStrings.length > 0 
+        ? `I see you have ${balanceStrings.join(', ')}.` 
+        : `It looks like your wallet is currently empty.`;
+
+      pushMessage('agent', `Terminal connected to ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}. ${balanceText} How can I assist you with your DeFi operations today?`);
+    } else if (!walletAddress && messages.length === 0) {
+      pushMessage('agent', `Welcome to Spectra Agent Terminal. Please connect your wallet to review your balances and execute swaps.`);
+    }
+  }, [walletAddress, tokenBalances, messages.length, isLoading, hasHydratedWallet, pushMessage]);
 
   const handleConnectWallet = async () => {
     try {
@@ -680,45 +706,30 @@ export default function GlassTerminal() {
       const ethRaw = await provider.getBalance(account).catch(() => 0n);
       const txCount = await provider.getTransactionCount(account).catch(() => 0n);
 
-      let musdDecimals = 18;
-      let musdRaw = 0n;
-      let allowanceRaw = 0n;
-      try {
-        const tyiContract = new ethers.Contract(
-          TOKEN_ADDRESSES.TYI,
-          [
-            'function balanceOf(address owner) view returns (uint256)',
-            'function decimals() view returns (uint8)',
-            'function allowance(address owner, address spender) view returns (uint256)'
-          ],
-          provider
-        );
-        [musdDecimals, musdRaw, allowanceRaw] = await Promise.all([
-          tyiContract.decimals(),
-          tyiContract.balanceOf(account),
-          tyiContract.allowance(account, CONTRACT_ADDRESSES.SPECTRA_EXCHANGE),
-        ]);
-      } catch (e) {
-        console.warn('[GlassTerminal] Failed to fetch TYI balance:', e);
-      }
+      const fetchedBalances = {
+        ETH: Number(ethers.formatEther(ethRaw)).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })
+      };
 
-      let usdcDecimals = 6;
-      let usdcRaw = 0n;
-      try {
-        const usdcContract = new ethers.Contract(
-          TOKEN_ADDRESSES.USDC,
-          [
-            'function balanceOf(address owner) view returns (uint256)',
-            'function decimals() view returns (uint8)'
-          ],
-          provider
-        );
-        [usdcDecimals, usdcRaw] = await Promise.all([
-          usdcContract.decimals(),
-          usdcContract.balanceOf(account),
-        ]);
-      } catch (e) {
-        console.warn('[GlassTerminal] Failed to fetch USDC balance:', e);
+      const promises = Object.entries(TOKEN_ADDRESSES).map(async ([symbol, address]) => {
+        if (symbol === 'ETH' || symbol === 'WETH' || address === ethers.ZeroAddress) return;
+        const tokenContract = new ethers.Contract(address, [
+          'function balanceOf(address owner) view returns (uint256)',
+          'function decimals() view returns (uint8)'
+        ], provider);
+        try {
+          const decimals = await tokenContract.decimals().catch(() => 18);
+          const raw = await tokenContract.balanceOf(account).catch(() => 0n);
+          fetchedBalances[symbol] = Number(ethers.formatUnits(raw, decimals)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        } catch(e) {}
+      });
+
+      await Promise.allSettled(promises);
+
+      // Fetch TYI Allowance
+      if (TOKEN_ADDRESSES.TYI) {
+        const tyiContract = new ethers.Contract(TOKEN_ADDRESSES.TYI, ['function allowance(address owner, address spender) view returns (uint256)'], provider);
+        const allowanceRaw = await tyiContract.allowance(account, CONTRACT_ADDRESSES.SPECTRA_EXCHANGE).catch(() => 0n);
+        setWalletAllowance(Number(ethers.formatUnits(allowanceRaw, 18)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
       }
 
       let tier = 0;
@@ -735,13 +746,11 @@ export default function GlassTerminal() {
         console.warn('[GlassTerminal] Failed to fetch SaaS details:', e);
       }
 
-      setWalletEthBalance(Number(ethers.formatEther(ethRaw)).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 }));
-      setWalletUsdBalance(Number(ethers.formatUnits(musdRaw, musdDecimals)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-      setWalletAllowance(Number(ethers.formatUnits(allowanceRaw, musdDecimals)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-      setWalletUsdcBalance(Number(ethers.formatUnits(usdcRaw, usdcDecimals)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+      setTokenBalances(fetchedBalances);
       setWalletNonce(txCount || 0);
       setUserTier(tier);
       setRemainingTxs(remaining);
+      setHasHydratedWallet(true);
     } catch (err) {
       console.warn('[GlassTerminal] Error in hydrateWallet:', err);
     }
@@ -776,13 +785,12 @@ export default function GlassTerminal() {
     if (walletAddress) {
       hydrateWallet().catch(() => undefined);
     } else {
-      setWalletEthBalance('0.0000');
-      setWalletUsdBalance('0.00');
-      setWalletUsdcBalance('0.00');
+      setTokenBalances({});
       setWalletNonce(0);
       setWalletAllowance('0.00');
       setUserTier(0);
       setRemainingTxs(10);
+      setHasHydratedWallet(false);
     }
   }, [walletAddress]);
 
@@ -800,42 +808,25 @@ export default function GlassTerminal() {
     const userPrompt = inputValue.trim();
     pushMessage('user', userPrompt);
 
-    if (!walletAddress) {
-      const anonUsage = Number(localStorage.getItem('spectra_anon_usage') || '0');
-      if (anonUsage >= 1) {
-        pushMessage('agent', '[TRIAL_LIMIT_EXCEEDED] Please connect your wallet and authenticate to access the free Alpha tier.');
-        setInputValue('');
-        setIsLoading(false);
-        return;
-      }
-      localStorage.setItem('spectra_anon_usage', (anonUsage + 1).toString());
-    } else {
-      const today = new Date().toDateString();
-      const usageKey = `spectra_usage_${walletAddress}`;
-      const usageData = JSON.parse(localStorage.getItem(usageKey) || '{"count":0,"date":""}');
-      if (usageData.date !== today) {
-        usageData.count = 0;
-        usageData.date = today;
-      }
-      
-      const limit = userTier === 1 ? 15 : (userTier === 2 ? 30 : 10);
-      const tierName = userTier === 1 ? 'VECTOR' : (userTier === 2 ? 'NEXUS' : 'ALPHA');
-      
-      if (usageData.count >= limit || remainingTxs <= 0) {
-        pushMessage('agent', `[TRIAL_LIMIT_EXCEEDED] Daily limit of ${limit} queries reached for ${tierName} tier. Please upgrade your subscription on the Mint page.`);
-        setInputValue('');
-        setIsLoading(false);
-        return;
-      }
-      
-      usageData.count++;
-      localStorage.setItem(usageKey, JSON.stringify(usageData));
-      setRemainingTxs(prev => Math.max(0, prev - 1));
+    const rateLimit = consumeRequest();
+    if (!rateLimit) {
+      pushMessage('agent', '[SYSTEM_ERROR] Please connect your wallet to access the Agent.');
+      setInputValue('');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!rateLimit.allowed) {
+      const minutesLeft = Math.ceil(rateLimit.remainingTime / 60000);
+      pushMessage('agent', `[RATE_LIMIT_EXCEEDED] You have reached your hourly limit of ${rateLimit.limit} requests for your current tier. Please upgrade your Spectra tier or wait ${minutesLeft} minutes.`);
+      setInputValue('');
+      setIsLoading(false);
+      return;
     }
 
     try {
       const context = walletAddress
-        ? `Active wallet connected: ${walletAddress}. Balances: ETH = ${walletEthBalance}, TYI = ${walletUsdBalance}.`
+        ? `Active wallet connected: ${walletAddress}. Balances: ${Object.entries(tokenBalances).map(([s, b]) => `${b} ${s}`).join(', ')}.`
         : `No wallet connected.`;
       const parsed = await tryParseDefiIntent(userPrompt, { context });
       if (!parsed) {
@@ -854,12 +845,25 @@ export default function GlassTerminal() {
 
       pushMessage('agent', `Intent resolved: ${parsed.action.toUpperCase()} ${parsed.amount} ${String(parsed.token).toUpperCase()}`);
       setIntent(parsed);
+      setFlowState('EU_CONSENT');
       setInputValue('');
     } catch (apiError) {
       setError(apiError?.message || 'Failed to contact agent backend.');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleGrantPermission = async () => {
+    if (!walletAddress) {
+      try {
+        await connectWallet();
+      } catch (err) {
+        setError(err.message || 'Failed to connect wallet.');
+        return;
+      }
+    }
+    setFlowState('CHART_REVIEW');
   };
 
   const handleSignAndExecute = async () => {
@@ -869,6 +873,7 @@ export default function GlassTerminal() {
 
     setError('');
     setIsSigning(true);
+    setFlowState('EXECUTING');
 
     try {
       if (!window.ethereum) {
@@ -881,7 +886,8 @@ export default function GlassTerminal() {
       }
 
       const from = accounts[0];
-      setWalletAddress(from);
+      // Wallet is already connected via handleGrantPermission if we got here.
+      // We don't need to manually set it.
       await hydrateWallet();
 
       const provider = new ethers.BrowserProvider(window.ethereum);
@@ -898,7 +904,7 @@ export default function GlassTerminal() {
 
       const signer = await provider.getSigner();
       const tokenOut = resolveTokenAddress(intent.token);
-      const amountIn = ethers.parseUnits(String(intent.amount || '0'), 6);
+      const amountIn = ethers.parseUnits(String(intent.amount || '0'), 18);
 
       // Ensure the exchange contract spender has allowance to transfer the user's TYI
       await ensureAllowance(signer, CONTRACT_ADDRESSES.SPECTRA_EXCHANGE, amountIn);
@@ -920,6 +926,10 @@ export default function GlassTerminal() {
         setTimeout(() => hydrateWallet().catch(() => {}), 2000);
         setTimeout(() => hydrateWallet().catch(() => {}), 5000);
         setTimeout(() => hydrateWallet().catch(() => {}), 8000);
+        
+        // Reset state after success
+        setIntent(null);
+        setFlowState('IDLE');
       }
     } catch (signError) {
       if (signError?.code === 4001) {
@@ -927,6 +937,8 @@ export default function GlassTerminal() {
       } else {
         setError(signError?.shortMessage || signError?.message || 'Execution failed.');
       }
+      // Revert flow state so user can retry or cancel
+      setFlowState('CHART_REVIEW');
     } finally {
       setIsSigning(false);
     }
@@ -954,14 +966,12 @@ export default function GlassTerminal() {
                 <StatLabel>Wallet</StatLabel>
                 <StatValue>{`${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`}</StatValue>
               </StatItem>
-              <StatItem>
-                <StatLabel>ETH</StatLabel>
-                <StatValue>{walletEthBalance}</StatValue>
-              </StatItem>
-              <StatItem>
-                <StatLabel>TYI</StatLabel>
-                <StatValue>{walletUsdBalance}</StatValue>
-              </StatItem>
+              {Object.entries(tokenBalances).map(([symbol, bal]) => (
+                <StatItem key={symbol}>
+                  <StatLabel>{symbol}</StatLabel>
+                  <StatValue>{bal}</StatValue>
+                </StatItem>
+              ))}
               <StatItem>
                 <StatLabel>Allowance</StatLabel>
                 <StatValue>{walletAllowance}</StatValue>
@@ -1034,6 +1044,7 @@ export default function GlassTerminal() {
                       marginTop: '3px',
                       borderRadius: '4px'
                     }}
+                    disabled={flowState !== 'EU_CONSENT' && flowState !== 'IDLE'}
                   />
                 </IntentItem>
                 <IntentItem>
@@ -1041,14 +1052,60 @@ export default function GlassTerminal() {
                   <IntentValue>{intent.token}</IntentValue>
                 </IntentItem>
               </IntentGrid>
-              {hasInsufficientBalance ? (
-                <WarningBox>
-                  ⚠️ Insufficient TYI balance. This transaction requires {intent.amount} TYI, but your wallet only holds {walletUsdBalance} TYI. Please use the faucet button on the right to claim TYI first.
-                </WarningBox>
-              ) : (
-                <ExecuteButton type="button" onClick={handleSignAndExecute} disabled={isSigning || sdkLoading}>
-                  {sdkLoading ? 'Relaying Gasless...' : isSigning ? 'Awaiting Signature...' : 'Sign & Execute'}
-                </ExecuteButton>
+
+              {flowState === 'EU_CONSENT' && (
+                <div style={{ marginTop: '10px' }}>
+                  <WarningBox style={{ borderColor: 'rgba(16, 185, 129, 0.5)', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+                    EU Compliance Check: You are requesting to swap {intent.amount} {intent.token}. Do you grant explicit consent to proceed with this evaluation?
+                  </WarningBox>
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                    <ExecuteButton type="button" onClick={handleGrantPermission} style={{ flex: 1, background: 'rgba(16, 185, 129, 0.2)', borderColor: 'rgba(16, 185, 129, 0.5)' }}>
+                      Grant Permission
+                    </ExecuteButton>
+                    <ExecuteButton type="button" onClick={() => { setIntent(null); setFlowState('IDLE'); }} style={{ flex: 1, background: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#ef4444' }}>
+                      Cancel
+                    </ExecuteButton>
+                  </div>
+                </div>
+              )}
+
+              {flowState === 'CHART_REVIEW' && (
+                <div style={{ marginTop: '10px' }}>
+                  <div style={{ height: '300px', width: '100%', marginBottom: '10px', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                    <iframe
+                      title="tradingview"
+                      src={`https://s.tradingview.com/widgetembed/?symbol=${encodeURIComponent(TRADING_VIEW_SYMBOL[String(intent.token).toUpperCase()] || TRADING_VIEW_SYMBOL.ETH)}&interval=60&hidesidetoolbar=1&hidetoptoolbar=0&symboledit=0&saveimage=0&toolbarbg=0A0A0B&theme=dark&style=1&locale=en`}
+                      style={{ width: '100%', height: '100%', border: 'none' }}
+                    />
+                  </div>
+                  {hasInsufficientBalance ? (
+                    <WarningBox>
+                      ⚠️ Insufficient {String(intent.token || 'TYI').toUpperCase()} balance. This transaction requires {intent.amount} {String(intent.token || 'TYI').toUpperCase()}, but your wallet only holds {tokenBalances[String(intent.token || 'TYI').toUpperCase()] || '0.00'} {String(intent.token || 'TYI').toUpperCase()}.
+                    </WarningBox>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <WarningBox style={{ borderColor: 'rgba(176, 38, 255, 0.5)', background: 'rgba(176, 38, 255, 0.1)', color: '#b026ff' }}>
+                        Review the live market data above. Do you confirm the final execution of this swap?
+                      </WarningBox>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <ExecuteButton type="button" onClick={handleSignAndExecute} disabled={isSigning || sdkLoading} style={{ flex: 1 }}>
+                          Confirm Execution
+                        </ExecuteButton>
+                        <ExecuteButton type="button" onClick={() => { setIntent(null); setFlowState('IDLE'); }} disabled={isSigning || sdkLoading} style={{ flex: 1, background: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#ef4444' }}>
+                          Cancel
+                        </ExecuteButton>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {flowState === 'EXECUTING' && (
+                <div style={{ marginTop: '10px' }}>
+                  <ExecuteButton type="button" disabled style={{ width: '100%' }}>
+                    {sdkLoading ? 'Relaying Gasless...' : isSigning ? 'Awaiting Signature...' : 'Executing...'}
+                  </ExecuteButton>
+                </div>
               )}
             </IntentCard>
           )}
@@ -1098,27 +1155,25 @@ export default function GlassTerminal() {
 
             <SidebarSectionTitle>Balances</SidebarSectionTitle>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <BalanceBlock $active={false}>
-                <BalanceLabel>Mock USD Balance</BalanceLabel>
-                <BalanceRow style={{ marginTop: '4px' }}>
-                  <BalanceValue>{walletUsdBalance}</BalanceValue>
-                  <BalanceToken>TYI</BalanceToken>
-                </BalanceRow>
-                <BalanceRate>
-                  Rate: $1.00 | Holding: ${(normalizeAmount(walletUsdBalance) * 1.00).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
-                </BalanceRate>
-              </BalanceBlock>
-
-              <BalanceBlock $active={false}>
-                <BalanceLabel>Native Gas Balance</BalanceLabel>
-                <BalanceRow style={{ marginTop: '4px' }}>
-                  <BalanceValue>{walletEthBalance}</BalanceValue>
-                  <BalanceToken>ETH</BalanceToken>
-                </BalanceRow>
-                <BalanceRate>
-                  Rate: $3,500.00 | Holding: ${(normalizeAmount(walletEthBalance) * 3500.00).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
-                </BalanceRate>
-              </BalanceBlock>
+              {Object.entries(tokenBalances).map(([symbol, bal]) => {
+                const amount = normalizeAmount(bal);
+                let price = 1.00;
+                if (symbol === 'ETH') price = 3500.00;
+                if (symbol === 'WBTC') price = 60000.00;
+                
+                return (
+                  <BalanceBlock key={symbol} $active={false}>
+                    <BalanceLabel>{symbol === 'ETH' ? 'Native Gas Balance' : `${symbol} Balance`}</BalanceLabel>
+                    <BalanceRow style={{ marginTop: '4px' }}>
+                      <BalanceValue>{bal}</BalanceValue>
+                      <BalanceToken>{symbol}</BalanceToken>
+                    </BalanceRow>
+                    <BalanceRate>
+                      Rate: ${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | Holding: ${(amount * price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                    </BalanceRate>
+                  </BalanceBlock>
+                );
+              })}
             </div>
           </div>
 

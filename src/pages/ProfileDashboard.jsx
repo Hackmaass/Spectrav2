@@ -1,17 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import styled, { createGlobalStyle } from 'styled-components';
 import { motion } from 'framer-motion';
 import { User, Mail, Phone, Edit2, Activity, Zap, Shield, Save, X, RefreshCw, Star } from 'lucide-react';
 import { ethers } from 'ethers';
 import { useAuth } from '../context/AuthContext';
-import { CONTRACT_ADDRESSES, CONTRACT_ABIS } from '../config/contracts.js';
-
-const PROFILE_ABI = [
-  "function getProfile(address _user) external view returns (tuple(string name, string email, string phone, string bio, uint8 avatarId, bool exists))",
-  "function createProfile(string _name, string _email, string _phone, string _bio, uint8 _avatarId) external",
-  "function updateProfile(string _name, string _email, string _phone, string _bio, uint8 _avatarId) external"
-];
-const PROFILE_ADDRESS = "0x598Ca7A104fa36fb59BB49bC5Ba2813C72978d5b";
+import { CONTRACT_ADDRESSES, CONTRACT_ABIS, ensureBaseSepolia } from '../config/contracts.js';
+import { getProfile, createProfile, updateProfile } from '../lib/stellar/contracts/profile';
+import { getUserTier } from '../lib/stellar/contracts/saas';
 
 const GlobalStyle = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Oswald:wght@700&display=swap');
@@ -510,13 +506,29 @@ const Skeleton = styled.div`
 `;
 
 export default function ProfileDashboard() {
-  const { walletAddress, connectWallet } = useAuth();
-  const account = walletAddress;
+  const { walletAddress, connectWallet, stellarPublicKey, isStellarConnected, connectStellar, fetchProfileAndTier } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Use Stellar account if connected, otherwise ETH account
+  const activeAccount = isStellarConnected ? stellarPublicKey : walletAddress;
+  const account = activeAccount;
   const [userTier, setUserTier] = useState(0);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  
+  const queryParams = new URLSearchParams(location.search);
+  const isOnboard = queryParams.get('mode') === 'onboarding';
+  const [isEditing, setIsEditing] = useState(isOnboard);
+  
   const [hasProfile, setHasProfile] = useState(false);
+
+  useEffect(() => {
+    if (isOnboard && !isEditing) {
+      setIsEditing(true);
+    }
+  }, [isOnboard]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -527,8 +539,8 @@ export default function ProfileDashboard() {
   });
 
   useEffect(() => {
-    if (walletAddress) {
-      loadProfile(walletAddress);
+    if (activeAccount) {
+      loadProfile(activeAccount);
     } else {
       setHasProfile(false);
       setFormData({
@@ -540,7 +552,7 @@ export default function ProfileDashboard() {
       });
       setUserTier(0);
     }
-  }, [walletAddress]);
+  }, [activeAccount, isStellarConnected]);
 
   const handleConnectWallet = async () => {
     if (!window.ethereum) return alert("Please install MetaMask or another Web3 wallet.");
@@ -554,57 +566,101 @@ export default function ProfileDashboard() {
   const loadProfile = async (address) => {
     setLoading(true);
     try {
-      await new Promise(r => setTimeout(r, 1000));
-      
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const contract = new ethers.Contract(PROFILE_ADDRESS, PROFILE_ABI, provider);
-      
-      try {
-        const profile = await contract.getProfile(address);
-        if (profile.exists) {
+      if (isStellarConnected) {
+        // --- STELLAR PROFILE LOAD (parallel) ---
+        const [stellarProfile, tier] = await Promise.all([
+          getProfile(address),
+          getUserTier(address),
+        ]);
+        
+        if (stellarProfile && stellarProfile.name) {
           setHasProfile(true);
-          setFormData({
-            name: profile.name,
-            email: profile.email,
-            phone: profile.phone,
-            bio: profile.bio,
-            avatarId: Number(profile.avatarId)
-          });
+          setFormData(prev => ({
+            ...prev,
+            name:     stellarProfile.name,
+            email:    stellarProfile.email,
+            phone:    stellarProfile.phone,
+            bio:      stellarProfile.bio,
+            avatarId: stellarProfile.avatarId || 1,
+          }));
         }
-      } catch (e) {}
-
-      try {
-        const saasContract = new ethers.Contract(
-          CONTRACT_ADDRESSES.SPECTRA_SAAS,
-          CONTRACT_ABIS.SPECTRA_SAAS,
-          provider
-        );
-        const tier = Number(await saasContract.getUserTier(address));
         setUserTier(tier);
-      } catch (e) {}
-    } catch (err) {} finally {
+      } else {
+        // --- ETHEREUM PROFILE LOAD ---
+        await ensureBaseSepolia();
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const contract = new ethers.Contract(CONTRACT_ADDRESSES.SPECTRA_PROFILE, CONTRACT_ABIS.SPECTRA_PROFILE, provider);
+        
+        try {
+          const profile = await contract.getProfile(address);
+          if (profile.exists) {
+            setHasProfile(true);
+            setFormData({
+              name: profile.name,
+              email: profile.email,
+              phone: profile.phone,
+              bio: profile.bio,
+              avatarId: Number(profile.avatarId)
+            });
+          }
+        } catch (e) {}
+
+        try {
+          const saasContract = new ethers.Contract(
+            CONTRACT_ADDRESSES.SPECTRA_SAAS,
+            CONTRACT_ABIS.SPECTRA_SAAS,
+            provider
+          );
+          const tier = Number(await saasContract.getUserTier(address));
+          setUserTier(tier);
+        } catch (e) {}
+      }
+    } catch (err) {
+      console.warn('Failed to load profile data:', err);
+    } finally {
       setLoading(false);
     }
   };
 
   const saveProfile = async () => {
     setSaving(true);
+    setSaveError('');
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const contract = new ethers.Contract(PROFILE_ADDRESS, PROFILE_ABI, signer);
-
-      let tx;
-      if (hasProfile) {
-        tx = await contract.updateProfile(formData.name, formData.email, formData.phone, formData.bio, formData.avatarId);
+      if (isStellarConnected) {
+        // --- STELLAR PROFILE UPDATE ---
+        if (hasProfile) {
+          await updateProfile(activeAccount, formData);
+        } else {
+          await createProfile(activeAccount, formData);
+        }
+        setHasProfile(true);
+        setIsEditing(false);
+        if (isOnboard) navigate('/', { replace: true });
       } else {
-        tx = await contract.createProfile(formData.name, formData.email, formData.phone, formData.bio, formData.avatarId);
+        // --- ETHEREUM PROFILE UPDATE ---
+        await ensureBaseSepolia();
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const contract = new ethers.Contract(CONTRACT_ADDRESSES.SPECTRA_PROFILE, CONTRACT_ABIS.SPECTRA_PROFILE, signer);
+
+        let tx;
+        if (hasProfile) {
+          tx = await contract.updateProfile(formData.name, formData.email, formData.phone, formData.bio, formData.avatarId);
+        } else {
+          tx = await contract.createProfile(formData.name, formData.email, formData.phone, formData.bio, formData.avatarId);
+        }
+        
+        await tx.wait();
+        if (fetchProfileAndTier) await fetchProfileAndTier(walletAddress);
+        setIsEditing(false);
+        if (isOnboard) {
+          navigate('/', { replace: true });
+        }
       }
-      
-      await tx.wait();
-      setHasProfile(true);
-      setIsEditing(false);
-    } catch (err) {} finally {
+    } catch (err) {
+      console.warn("Save profile failed:", err);
+      setSaveError(err.message || 'Failed to save profile. Make sure you confirm the transaction.');
+    } finally {
       setSaving(false);
     }
   };
@@ -620,9 +676,34 @@ export default function ProfileDashboard() {
             <p style={{ color: '#A1A1AA', marginBottom: 32 }}>
               Connect your wallet to access your unified profile and analytics dashboard.
             </p>
-            <ConnectButton onClick={handleConnectWallet}>
-              Connect Wallet
-            </ConnectButton>
+            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
+              <ConnectButton onClick={handleConnectWallet}>
+                Connect Ethereum
+              </ConnectButton>
+              <ConnectButton onClick={async () => {
+                try {
+                  const addr = await connectStellar();
+                  await loadProfile(addr);
+                } catch (err) {
+                  alert(err.message || 'Stellar connection failed');
+                }
+              }} style={{ background: '#000', border: '1px solid #fff' }}>
+                Connect Stellar Snap
+              </ConnectButton>
+                {!isOnboard && (
+                <SaveButton
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    setIsEditing(false);
+                    setFormData(profileData);
+                  }}
+                  style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                >
+                  Cancel
+                </SaveButton>
+              )}
+            </div>
           </CyberCard>
         </motion.div>
       </Container>
@@ -705,6 +786,11 @@ export default function ProfileDashboard() {
                   </Button>
                 )}
               </div>
+              {saveError && (
+                <div style={{ marginTop: 16, color: '#ef4444', fontSize: '13px', textAlign: 'center' }}>
+                  {saveError}
+                </div>
+              )}
             </motion.div>
           ) : (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -714,23 +800,23 @@ export default function ProfileDashboard() {
                 </AvatarSquare>
                 <NameSection>
                   <NameTitle>{formData.name || 'ANONYMOUS USER'}</NameTitle>
-                  <RoleSubtitle>FULL-STACK MLOPS ENGINEER & FOUNDER</RoleSubtitle>
+                  <RoleSubtitle>{formData.name ? 'SPECTRA USER' : 'NEW USER'}</RoleSubtitle>
                 </NameSection>
               </ProfileHeader>
               
               <BioText>
-                {formData.bio || 'Hi, I\'m Sarthak, a Full-Stack MLOps Engineer passionate about bridging deep-tech AI with scalable web architecture.'}
+                {formData.bio || 'No bio provided. Complete your profile to share your journey across the decentralized web.'}
               </BioText>
               
               <Divider />
               
               <ContactRow>
                 <IconBox><Mail /></IconBox>
-                <span>{formData.email || 'sarthakpatil.ug@gmail.com'}</span>
+                <span>{formData.email || 'No email provided'}</span>
               </ContactRow>
               <ContactRow>
                 <IconBox><Phone /></IconBox>
-                <span>{formData.phone || '1234561234'}</span>
+                <span>{formData.phone || 'No phone provided'}</span>
               </ContactRow>
               <ContactRow>
                 <IconBox><Shield /></IconBox>

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
+import { RateLimitProvider } from './context/RateLimitContext';
 import { GlobalStyle } from './styles/GlobalStyle';
 import { UGFProvider } from '@tychilabs/react-ugf';
 import './index.css';
@@ -14,10 +15,12 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <ThemeProvider>
         <AuthProvider>
-          <GlobalStyle />
-          <UGFProvider mode="testnet">
-            <App />
-          </UGFProvider>
+          <RateLimitProvider>
+            <GlobalStyle />
+            <UGFProvider mode="testnet">
+              <App />
+            </UGFProvider>
+          </RateLimitProvider>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>

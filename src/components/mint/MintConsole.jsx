@@ -178,20 +178,30 @@ export default function MintConsole() {
       setStatus('CONNECTING');
       const { provider } = await connectWalletLocal();
       const signer = await provider.getSigner();
-
-      // Step 1: Manual Approval for SaaS Contract (Subscription Fee)
-      setStatus('APPROVING_SAAS');
       const token = new ethers.Contract(TOKEN_ADDRESSES.TYI, ERC20_ABI, signer);
       const decimals = await token.decimals();
       const feeAmount = ethers.parseUnits(String(tier.deduction), decimals);
-      
-      const allowance = await token.allowance(account, CONTRACT_ADDRESSES.SPECTRA_SAAS);
-      if (allowance < feeAmount) {
-        const tx = await token.approve(CONTRACT_ADDRESSES.SPECTRA_SAAS, ethers.MaxUint256);
-        await tx.wait(1);
+
+      // ── Preflight: check TYI balance BEFORE hitting the chain ──────────────
+      const balance = await token.balanceOf(account);
+      if (balance < feeAmount) {
+        const have = Number(ethers.formatUnits(balance, decimals)).toFixed(2);
+        const need = tier.deduction;
+        throw new Error(
+          `Insufficient TYI balance. You have ${have} TYI but need ${need} TYI.\n` +
+          `(Note: TYI is the mock token for Base Sepolia tests. Please use the Stellar test flow instead!)`
+        );
       }
 
-      // Step 2: Subscribe (Direct Tx)
+      // Step 1: Approve SaaS contract to spend TYI
+      setStatus('APPROVING_SAAS');
+      const allowance = await token.allowance(account, CONTRACT_ADDRESSES.SPECTRA_SAAS);
+      if (allowance < feeAmount) {
+        const approveTx = await token.approve(CONTRACT_ADDRESSES.SPECTRA_SAAS, ethers.MaxUint256);
+        await approveTx.wait(1);
+      }
+
+      // Step 2: Subscribe
       setStatus('SUBSCRIBING');
       const saas = new ethers.Contract(CONTRACT_ADDRESSES.SPECTRA_SAAS, CONTRACT_ABIS.SPECTRA_SAAS, signer);
       const subscribeTx = await saas.subscribe(tier.plan);
@@ -221,7 +231,9 @@ export default function MintConsole() {
 
     } catch (err) {
       console.error('[MintConsole] Execution Error:', err);
-      setExecutionError(err.message);
+      // Surface a clean message — strip the raw revert hex from ethers errors
+      const msg = err.reason || err.shortMessage || err.message || 'Unknown error';
+      setExecutionError(msg);
       setStatus('ERROR');
     } finally {
       setIsMinting(false);
@@ -336,10 +348,27 @@ export default function MintConsole() {
               borderRadius: '4px',
               marginBottom: '12px',
               fontSize: '0.85rem',
-              fontFamily: 'Geist Mono'
+              fontFamily: 'Geist Mono',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
             }}>
               <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>[ PIPELINE_FAILURE ]</div>
-              {executionError}
+              {executionError.split('\n').map((line, i) => {
+                const urlMatch = line.match(/(https?:\/\/[^\s]+)/);
+                if (urlMatch) {
+                  const [before, url] = line.split(urlMatch[0]);
+                  return (
+                    <div key={i}>{before}
+                      <a href={urlMatch[0]} target="_blank" rel="noopener noreferrer"
+                        style={{ color: '#60a5fa', textDecoration: 'underline' }}>
+                        {urlMatch[0]}
+                      </a>
+                      {url}
+                    </div>
+                  );
+                }
+                return <div key={i}>{line}</div>;
+              })}
             </div>
           )}
 
