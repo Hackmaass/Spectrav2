@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Wallet } from "lucide-react";
+import { X, Wallet, Hexagon } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 
 const Overlay = styled(motion.div)`
   position: fixed;
@@ -70,6 +71,7 @@ const ConnectButton = styled.button`
   justify-content: center;
   gap: 10px;
   transition: all ease .5s;
+  margin-bottom: 12px;
 
   &:hover {
     background: white;
@@ -77,26 +79,56 @@ const ConnectButton = styled.button`
     border-color: var(--color-primary);
     box-shadow: 0 0 16px rgba(var(--color-primary-rgb, 0, 85, 255), 0.2);
   }
+  
+  &:disabled {
+    background: #333;
+    color: #888;
+    cursor: not-allowed;
+    border-color: #444;
+    box-shadow: none;
+  }
 `;
 
-export default function LoginModal({ isOpen, onClose, onLogin }) {
+const ErrorText = styled.div`
+  color: #ef4444;
+  margin-top: 16px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 13px;
+  text-align: center;
+`;
+
+export default function WalletSelectorModal({ isOpen, onClose }) {
+  const { connectWallet, connectStellar } = useAuth();
+  const [error, setError] = useState('');
+  const [isConnecting, setIsConnecting] = useState(false);
+
   if (!isOpen) return null;
 
-  const handleConnect = async () => {
+  const handleEvmConnect = async () => {
+    setError('');
+    setIsConnecting(true);
     try {
-      if (!window.ethereum) {
-        alert("Please install MetaMask or another Web3 wallet to continue.");
-        return;
-      }
-      const accounts = await window.ethereum.request({
-        method: "eth_requestAccounts",
-      });
-      if (accounts && accounts.length > 0) {
-        onLogin(accounts[0]);
-        onClose();
-      }
+      await connectWallet();
+      onClose();
     } catch (err) {
-      console.error("Wallet connection failed:", err);
+      console.error("EVM connection failed:", err);
+      setError(err.message || 'Failed to connect EVM wallet');
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleStellarConnect = async () => {
+    setError('');
+    setIsConnecting(true);
+    try {
+      await connectStellar();
+      onClose();
+    } catch (err) {
+      console.error("Stellar connection failed:", err);
+      setError(err.message || 'Failed to connect Stellar wallet');
+    } finally {
+      setIsConnecting(false);
     }
   };
 
@@ -122,17 +154,21 @@ export default function LoginModal({ isOpen, onClose, onLogin }) {
 
             <Title>Login.</Title>
 
-            {/* <div className="auth">
-              <img className="authimage" src="auth.png" alt="design" />
-            </div> */}
             <p style={{ margin:"2%",marginBottom:"4%", textAlign: "center" }}>
-             Get Started with your First Swapping Transaction, authenticate now.
+             Select your preferred network engine to authenticate.
             </p>
 
-            <ConnectButton onClick={handleConnect}>
+            <ConnectButton onClick={handleEvmConnect} disabled={isConnecting}>
               <Wallet size={18} />
-              Connect Wallet
+              {isConnecting ? 'CONNECTING...' : 'Connect EVM (Base Sepolia)'}
             </ConnectButton>
+
+            <ConnectButton onClick={handleStellarConnect} disabled={isConnecting}>
+              <Hexagon size={18} />
+              {isConnecting ? 'CONNECTING...' : 'Connect Stellar (Soroban Snap)'}
+            </ConnectButton>
+
+            {error && <ErrorText>{error}</ErrorText>}
           </ModalContainer>
         </Overlay>
       )}

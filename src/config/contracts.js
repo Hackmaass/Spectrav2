@@ -31,7 +31,6 @@ export const TOKEN_SYMBOL_TO_ADDRESS = {
   MUSD: TOKEN_ADDRESSES.TYI,
   ETH: TOKEN_ADDRESSES.WETH,
   SEPOLIA_ETH: TOKEN_ADDRESSES.WETH,
-  BASE_SEPOLIA_ETH: TOKEN_ADDRESSES.WETH,
   USDC: TOKEN_ADDRESSES.USDC,
   WBTC: TOKEN_ADDRESSES.WBTC,
 };
@@ -46,7 +45,6 @@ export const TOKEN_DECIMALS = {
   USDC: 6,
   ETH: 18,
   SEPOLIA_ETH: 18,
-  BASE_SEPOLIA_ETH: 18,
   WETH: 18,
   WBTC: 8,
   XLM: 7,
@@ -54,6 +52,17 @@ export const TOKEN_DECIMALS = {
 
 export function resolveTokenDecimals(symbol) {
   return TOKEN_DECIMALS[String(symbol || '').toUpperCase()] ?? 18;
+}
+
+export const SAC_MAP = {
+  'TYI': import.meta.env.VITE_STELLAR_SAC_TYI || 'CDLZFC3SYJYDZT7K67VZ75HPJVIEWBEJLY4U7O76T4N2S27ZEMB6M2XF',
+  'USDC': import.meta.env.VITE_STELLAR_SAC_USDC || 'CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA',
+  'XLM': import.meta.env.VITE_STELLAR_SAC_XLM || 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC',
+  'EURC': import.meta.env.VITE_STELLAR_SAC_EURC || 'CCUUDM434BMZMYWYDITHFXHDMIVTGGD6T2I5UKNX5BSLXLW7HVR4MCGZ'
+};
+
+export function resolveSacAddress(assetId) {
+  return SAC_MAP[String(assetId || '').toUpperCase()] || SAC_MAP['TYI'];
 }
 
 /**
@@ -82,7 +91,7 @@ export function resolveTokenLabel(symbol) {
     return 'TYI';
   }
 
-  if (normalized === 'SEPOLIA_ETH' || normalized === 'BASE_SEPOLIA_ETH') {
+  if (normalized === 'SEPOLIA_ETH') {
     return 'ETH';
   }
 

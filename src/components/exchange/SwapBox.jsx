@@ -2,9 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ethers } from 'ethers';
 import { useUGF } from '../../hooks/useUGF';
 import { useAuth } from '../../context/AuthContext';
-import { CONTRACT_ABIS, CONTRACT_ADDRESSES, TOKEN_ADDRESSES, resolveTokenAddress, resolveTokenLabel, ensureBaseSepolia, assertAddressFormat } from '../../config/contracts.js';
+import { CONTRACT_ABIS, CONTRACT_ADDRESSES, TOKEN_ADDRESSES, resolveTokenAddress, resolveTokenLabel, ensureBaseSepolia, assertAddressFormat, resolveSacAddress } from '../../config/contracts.js';
 import { getTokenBalance, getTokenDecimals } from '../../lib/stellar/contracts/token';
 import { swapTokens } from '../../lib/stellar/contracts/exchange';
+import { bridgeToEvm } from '../../lib/stellar/contracts/bridge';
 
 const ERC20_ABI = [
   'function balanceOf(address owner) view returns (uint256)',
@@ -14,23 +15,13 @@ const ERC20_ABI = [
 
 export const ASSET_OPTIONS = [
   { id: 'TYI', label: 'TYI (Mock USD)', tokenAddress: TOKEN_ADDRESSES.TYI, symbol: 'TYI', decimals: 6 },
-  { id: 'ETH', label: 'Ethereum (WETH)', tokenAddress: TOKEN_ADDRESSES.WETH, symbol: 'ETHUSDT', decimals: 18 },
-  { id: 'BASE_SEPOLIA_ETH', label: 'Base Sepolia ETH', tokenAddress: TOKEN_ADDRESSES.WETH, symbol: 'ETHUSDT', decimals: 18 },
+  { id: 'WETH', label: 'Wrapped ETH (WETH)', tokenAddress: TOKEN_ADDRESSES.WETH, symbol: 'ETHUSDT', decimals: 18 },
   { id: 'USDC', label: 'USDC', tokenAddress: TOKEN_ADDRESSES.USDC, symbol: 'USDC', decimals: 6 },
   { id: 'WBTC', label: 'Wrapped BTC', tokenAddress: TOKEN_ADDRESSES.WBTC, symbol: 'WBTC', decimals: 8 },
   { id: 'XLM', label: 'Stellar Lumens (XLM)', tokenAddress: TOKEN_ADDRESSES.TYI, symbol: 'XLM', decimals: 7 },
 ];
 
-const SAC_MAP = {
-  'TYI': import.meta.env.VITE_STELLAR_SAC_TYI || 'CDLZFC3SYJYDZT7K67VZ75HPJVIEWBEJLY4U7O76T4N2S27ZEMB6M2XF',
-  'USDC': import.meta.env.VITE_STELLAR_SAC_USDC || 'CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA',
-  'XLM': import.meta.env.VITE_STELLAR_SAC_XLM || 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC',
-  'EURC': import.meta.env.VITE_STELLAR_SAC_EURC || 'CCUUDM434BMZMYWYDITHFXHDMIVTGGD6T2I5UKNX5BSLXLW7HVR4MCGZ'
-};
 
-const resolveSacAddress = (assetId) => {
-  return SAC_MAP[assetId] || SAC_MAP['TYI'];
-};
 
 const ZERO = '0.00';
 
@@ -54,6 +45,22 @@ export default function SwapBox({
   const [selectedAssetBalance, setSelectedAssetBalance] = useState(ZERO);
   const [isExecutingState, setIsExecutingState] = useState(false);
   const [executionError, setExecutionError] = useState('');
+  
+  // Bridge mode state
+  const [mode, setMode] = useState('SWAP'); // 'SWAP' or 'BRIDGE'
+  const [bridgeDestination, setBridgeDestination] = useState('');
+  
+  // Hydrate bridge destination if EVM wallet is connected
+  useEffect(() => {
+    if (mode === 'BRIDGE' && !bridgeDestination) {
+      if (walletAddress) {
+        setBridgeDestination(walletAddress);
+      } else {
+        const cachedEvm = localStorage.getItem('spectra_wallet');
+        if (cachedEvm) setBridgeDestination(cachedEvm);
+      }
+    }
+  }, [mode, walletAddress, bridgeDestination]);
 
   const { execute, loading: sdkLoading, error: sdkError, step: sdkStep } = useUGF();
 
@@ -187,8 +194,17 @@ export default function SwapBox({
         throw new Error('Enter a valid pay amount before executing swap.');
       }
 
-      if (activePayAsset === activeAsset) {
+      if (activePayAsset === activeAsset && mode === 'SWAP') {
         throw new Error('Pay and Receive assets must be different.');
+      }
+      
+      if (mode === 'BRIDGE') {
+        if (!bridgeDestination || !bridgeDestination.startsWith('0x') || bridgeDestination.length !== 42) {
+          throw new Error('Enter a valid 0x EVM destination address.');
+        }
+        if (!stellarPublicKey) {
+          throw new Error('You must connect your Stellar wallet to bridge assets out of Soroban.');
+        }
       }
 
       let isStellar = false;
@@ -226,13 +242,26 @@ export default function SwapBox({
         const decimalsIn = activePayAssetMeta.decimals;
         const amountInParsed = ethers.parseUnits(String(safeAmount), decimalsIn).toString();
 
-        const result = await swapTokens(
-          currentAccount,
-          tokenInSAC,
-          tokenOutSAC,
-          amountInParsed,
-          '0'
-        );
+        let result;
+        if (mode === 'BRIDGE') {
+          // --- AXELAR GMP BRIDGE EXECUTION ---
+          result = await bridgeToEvm(
+            currentAccount,
+            tokenInSAC,
+            amountInParsed,
+            'base-sepolia',
+            bridgeDestination
+          );
+        } else {
+          // --- STANDARD SWAP EXECUTION ---
+          result = await swapTokens(
+            currentAccount,
+            tokenInSAC,
+            tokenOutSAC,
+            amountInParsed,
+            '0'
+          );
+        }
         
         if (result && result.hash) {
           onTxHashChange?.(result.hash);
@@ -240,8 +269,10 @@ export default function SwapBox({
           setTimeout(() => fetchBalances(null, null, currentAccount).catch(() => {}), 3000);
         }
         
-      } else {
+        } else if (mode === 'BRIDGE') {
         // --- ETHEREUM EXECUTION PATH ---
+        throw new Error('Bridging from EVM to Soroban is not yet supported in this demo UI.');
+      } else {
         const signer = await provider.getSigner();
         
         const decimalsIn = activePayAssetMeta.decimals;
@@ -346,11 +377,48 @@ export default function SwapBox({
   const getButtonLabel = () => {
     if (sdkLoading) return `PIPELINE: ${sdkStep}`;
     if (isExecutingState) return 'PREPARING...';
+    if (mode === 'BRIDGE') return 'Execute Gasless Bridge (Axelar GMP)';
     return 'Execute Gasless Swap (UGF)';
   };
 
   return (
     <div className="spectra-exchange-wrap">
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', padding: '4px', background: 'rgba(0, 0, 0, 0.4)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+        <button
+          type="button"
+          onClick={() => setMode('SWAP')}
+          style={{
+            flex: 1,
+            padding: '10px',
+            borderRadius: '6px',
+            background: mode === 'SWAP' ? 'rgba(176, 38, 255, 0.2)' : 'transparent',
+            color: mode === 'SWAP' ? '#fff' : '#888',
+            border: mode === 'SWAP' ? '1px solid rgba(176, 38, 255, 0.5)' : '1px solid transparent',
+            cursor: 'pointer',
+            fontFamily: 'Geist Mono',
+            transition: 'all 0.2s',
+          }}
+        >
+          Swap
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('BRIDGE')}
+          style={{
+            flex: 1,
+            padding: '10px',
+            borderRadius: '6px',
+            background: mode === 'BRIDGE' ? 'rgba(176, 38, 255, 0.2)' : 'transparent',
+            color: mode === 'BRIDGE' ? '#fff' : '#888',
+            border: mode === 'BRIDGE' ? '1px solid rgba(176, 38, 255, 0.5)' : '1px solid transparent',
+            cursor: 'pointer',
+            fontFamily: 'Geist Mono',
+            transition: 'all 0.2s',
+          }}
+        >
+          Cross-Chain Bridge
+        </button>
+      </div>
       <div className="spectra-swap-box">
         <label className="spectra-swap-label">You Pay</label>
         <div className="spectra-swap-row">
@@ -429,24 +497,45 @@ export default function SwapBox({
       </div>
 
       <div className="spectra-swap-box">
-        <label className="spectra-swap-label">You Receive</label>
-        <div className="spectra-swap-row">
-          <input className="spectra-swap-input" type="text" placeholder="0.0" value={receiveAmount} readOnly />
-          <select
-            className="spectra-select"
-            value={activeAsset}
-            onChange={(event) => onAssetChange(event.target.value)}
-          >
-            {ASSET_OPTIONS.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="spectra-balance-row">
-          <span className="spectra-balance-text">Live quote is pulled from the exchange contract for {activeAssetMeta.label}.</span>
-        </div>
+        <label className="spectra-swap-label">{mode === 'BRIDGE' ? 'Destination (Base Sepolia)' : 'You Receive'}</label>
+        
+        {mode === 'BRIDGE' ? (
+          <>
+            <div className="spectra-swap-row">
+              <input
+                className="spectra-swap-input"
+                type="text"
+                placeholder="0x... EVM Address"
+                value={bridgeDestination}
+                onChange={(e) => setBridgeDestination(e.target.value)}
+                style={{ fontSize: '13px', width: '100%' }}
+              />
+            </div>
+            <div className="spectra-balance-row">
+              <span className="spectra-balance-text">Enter the EVM destination address on Base Sepolia.</span>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="spectra-swap-row">
+              <input className="spectra-swap-input" type="text" placeholder="0.0" value={receiveAmount} readOnly />
+              <select
+                className="spectra-select"
+                value={activeAsset}
+                onChange={(event) => onAssetChange(event.target.value)}
+              >
+                {ASSET_OPTIONS.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="spectra-balance-row">
+              <span className="spectra-balance-text">Live quote is pulled from the exchange contract for {activeAssetMeta.label}.</span>
+            </div>
+          </>
+        )}
       </div>
 
       {executionError && (
@@ -462,6 +551,15 @@ export default function SwapBox({
         }}>
           <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>[ PIPELINE_FAILURE ]</div>
           {executionError}
+        </div>
+      )}
+
+      {isExecutingState && mode === 'BRIDGE' && (
+        <div className="spectra-approval-loader">
+          <div className="spectra-geometric-spinner" />
+          <span className="spectra-approval-text">
+            Axelar GMP: Intercepting cross-chain payload...
+          </span>
         </div>
       )}
 

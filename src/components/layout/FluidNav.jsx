@@ -2,7 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { User } from 'lucide-react';
-import LoginModal from '../auth/LoginModal';
+import WalletSelectorModal from '../auth/WalletSelectorModal';
 
 /* ─── Styled Components ──────────────────────────────────────────────────────── */
 
@@ -184,10 +184,9 @@ export default function FluidNav() {
         </NavRight>
       </NavInner>
     </NavWrap>
-    <LoginModal 
+    <WalletSelectorModal 
       isOpen={isModalOpen} 
       onClose={() => setIsModalOpen(false)} 
-      onLogin={login} 
     />
     </>
   );

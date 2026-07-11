@@ -119,6 +119,13 @@ export function AuthProvider({ children }) {
         localStorage.removeItem('spectra_wallet');
         setWalletAddress('');
         
+        // Auto-fund testnet account via Friendbot to prevent "Account not found"
+        try {
+          await fetch(`https://friendbot.stellar.org/?addr=${pubKey}`);
+        } catch (e) {
+          console.warn('[AuthContext] Friendbot funding skipped or failed:', e);
+        }
+        
         localStorage.setItem('spectra_stellar_wallet', pubKey);
         setStellarPublicKey(pubKey);
         setIsLoggedIn(true);

@@ -14,6 +14,7 @@ export const CONTRACTS = {
   EXCHANGE: import.meta.env.VITE_EXCHANGE_CONTRACT_ID,
   NFT:      import.meta.env.VITE_NFT_CONTRACT_ID,
   FEEDBACK: import.meta.env.VITE_STELLAR_FEEDBACK_CONTRACT,
+  BRIDGE:   import.meta.env.VITE_STELLAR_BRIDGE_CONTRACT,
 };
 
 // ─── Simple read-cache: avoid repeat RPC for same key within 60s ──────────────
@@ -41,7 +42,19 @@ export async function invokeContract(contractId, method, args, publicKey) {
   const operation = contract.call(method, ...args);
 
   // 1. Get account for sequence number
-  const account = await server.getAccount(publicKey);
+  let account;
+  try {
+    account = await server.getAccount(publicKey);
+  } catch (err) {
+    if (err?.response?.status === 404 && IS_TESTNET) {
+      console.warn('[Stellar] Account not found. Auto-funding via Friendbot...');
+      await fetch(`https://friendbot.stellar.org/?addr=${publicKey}`);
+      // Retry fetching account
+      account = await server.getAccount(publicKey);
+    } else {
+      throw err;
+    }
+  }
 
   // 2. Build the transaction
   let tx = new TransactionBuilder(account, {

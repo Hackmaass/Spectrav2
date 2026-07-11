@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { Wallet, Hexagon } from "lucide-react";
 
 const LoginContainer = styled.div`
   min-height: 100vh;
@@ -54,12 +55,21 @@ const ConnectBtn = styled.button`
   justify-content: center;
   gap: 10px;
   transition: all ease .5s;
+  margin-bottom: 12px;
 
   &:hover {
     background: white;
     color: black;
     border-color: var(--color-primary);
     box-shadow: 0 0 16px rgba(var(--color-primary-rgb, 0, 85, 255), 0.2);
+  }
+
+  &:disabled {
+    background: #333;
+    color: #888;
+    cursor: not-allowed;
+    border-color: #444;
+    box-shadow: none;
   }
 `;
 
@@ -71,7 +81,7 @@ const ErrorText = styled.div`
 `;
 
 export default function Login() {
-  const { connectWallet, isLoggedIn, profile, isLoadingProfile, isInitialized } = useAuth();
+  const { connectWallet, connectStellar, isLoggedIn, profile, isLoadingProfile, isInitialized } = useAuth();
   const [error, setError] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
   const navigate = useNavigate();
@@ -101,15 +111,24 @@ export default function Login() {
     return <Navigate to="/" replace />;
   }
 
-  const handleConnect = async () => {
+  const handleEvmConnect = async () => {
     setError('');
     setIsConnecting(true);
     try {
       await connectWallet();
-      // On success, the AuthContext state updates isLoggedIn=true.
-      // The re-render will hit the `if (isLoggedIn)` block above, wait for profile loading, and redirect.
     } catch (err) {
-      setError(err.message || 'Failed to connect wallet');
+      setError(err.message || 'Failed to connect EVM wallet');
+      setIsConnecting(false);
+    }
+  };
+
+  const handleStellarConnect = async () => {
+    setError('');
+    setIsConnecting(true);
+    try {
+      await connectStellar();
+    } catch (err) {
+      setError(err.message || 'Failed to connect Stellar wallet');
       setIsConnecting(false);
     }
   };
@@ -121,8 +140,15 @@ export default function Login() {
         <p style={{ margin:"2%",marginBottom:"4%", textAlign: "center" }}>
              Get Started with your First Swapping Transaction, authenticate now.
             </p>
-        <ConnectBtn onClick={handleConnect} disabled={isConnecting}>
-          {isConnecting ? 'CONNECTING...' : 'CONNECT METAMASK'}
+            
+        <ConnectBtn onClick={handleEvmConnect} disabled={isConnecting}>
+          <Wallet size={18} />
+          {isConnecting ? 'CONNECTING...' : 'Connect EVM (Base Sepolia)'}
+        </ConnectBtn>
+
+        <ConnectBtn onClick={handleStellarConnect} disabled={isConnecting}>
+          <Hexagon size={18} />
+          {isConnecting ? 'CONNECTING...' : 'Connect Stellar (Soroban Snap)'}
         </ConnectBtn>
         
         {error && <ErrorText>{error}</ErrorText>}

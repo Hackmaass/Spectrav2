@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { ethers } from 'ethers';
 import { tryParseDefiIntent } from '../../api/sarvamAgent.js';
-import { CONTRACT_ABIS, CONTRACT_ADDRESSES, TOKEN_ADDRESSES, resolveTokenAddress } from '../../config/contracts.js';
+import { CONTRACT_ABIS, CONTRACT_ADDRESSES, TOKEN_ADDRESSES, resolveTokenAddress, resolveTokenDecimals, resolveSacAddress } from '../../config/contracts.js';
+import { swapTokens } from '../../lib/stellar/contracts/exchange';
 import { useUGF } from '../../hooks/useUGF';
 import { useAuth } from '../../context/AuthContext';
 import { useRateLimit } from '../../context/RateLimitContext';
@@ -564,7 +565,7 @@ function buildTypedData(intent, chainId) {
 
 export default function GlassTerminal() {
   const { execute, loading: sdkLoading, error: sdkError, step: sdkStep } = useUGF();
-  const { walletAddress, connectWallet } = useAuth();
+  const { walletAddress, connectWallet, stellarPublicKey, connectStellar } = useAuth();
   const { consumeRequest } = useRateLimit();
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
@@ -583,9 +584,8 @@ export default function GlassTerminal() {
 
   const TRADING_VIEW_SYMBOL = {
     TYI: "BINANCE:USDTUSD",
-    ETH: "BINANCE:ETHUSDT",
+    WETH: "BINANCE:ETHUSDT",
     SEPOLIA_ETH: "BINANCE:ETHUSDT",
-    BASE_SEPOLIA_ETH: "BINANCE:ETHUSDT",
     USDC: "BINANCE:USDCUSDT",
     WBTC: "BINANCE:BTCUSDT",
     XLM: "BINANCE:XLMUSDT",
@@ -876,19 +876,59 @@ export default function GlassTerminal() {
     setFlowState('EXECUTING');
 
     try {
-      if (!window.ethereum) {
-        throw new Error('No injected wallet found.');
+      let isStellar = false;
+      let currentAccount = '';
+      
+      const sessionStellar = localStorage.getItem('spectra_stellar_wallet');
+      const sessionEVM = localStorage.getItem('spectra_wallet');
+      
+      if (sessionStellar) {
+        isStellar = true;
+        currentAccount = sessionStellar;
+      } else if (sessionEVM) {
+        isStellar = false;
+        currentAccount = sessionEVM;
+      } else {
+        throw new Error('No active wallet found for Agent routing.');
       }
 
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      if (!accounts?.length) {
-        throw new Error('Wallet returned no accounts.');
-      }
+      if (isStellar) {
+        // --- STELLAR (SOROBAN) INTENT ROUTING ---
+        const tokenIn = resolveSacAddress('TYI'); // Agent defaults to paying TYI for simplicity if not specified
+        const tokenOut = resolveSacAddress(intent.token);
+        const amountInParsed = ethers.parseUnits(String(intent.amount || '0'), 6).toString(); // TYI decimals = 6
+        
+        pushMessage('agent', 'Relaying intent to Stellar Testnet via Fee-Bump...');
+        
+        const result = await swapTokens(
+          currentAccount,
+          tokenIn,
+          tokenOut,
+          amountInParsed,
+          '0'
+        );
+        
+        if (result && result.hash) {
+          pushMessage('agent', `✅ Gasless execution complete on Soroban! Hash: ${result.hash}`);
+          // Reset state after success
+          setIntent(null);
+          setFlowState('IDLE');
+        }
+      } else {
+        // --- EVM INTENT ROUTING ---
+        if (!window.ethereum) {
+          throw new Error('No injected wallet found.');
+        }
 
-      const from = accounts[0];
-      // Wallet is already connected via handleGrantPermission if we got here.
-      // We don't need to manually set it.
-      await hydrateWallet();
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        if (!accounts?.length) {
+          throw new Error('Wallet returned no accounts.');
+        }
+
+        const from = accounts[0];
+        // Wallet is already connected via handleGrantPermission if we got here.
+        // We don't need to manually set it.
+        await hydrateWallet();
 
       const provider = new ethers.BrowserProvider(window.ethereum);
       const network = await provider.getNetwork();
@@ -931,6 +971,7 @@ export default function GlassTerminal() {
         setIntent(null);
         setFlowState('IDLE');
       }
+      } // End of EVM branch
     } catch (signError) {
       if (signError?.code === 4001) {
         setError('Signature or transaction rejected by user.');
