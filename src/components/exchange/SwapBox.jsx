@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ethers } from 'ethers';
 import { useUGF } from '../../hooks/useUGF';
 import { useAuth } from '../../context/AuthContext';
-import { CONTRACT_ABIS, CONTRACT_ADDRESSES, TOKEN_ADDRESSES, resolveTokenAddress, resolveTokenLabel, ensureBaseSepolia } from '../../config/contracts.js';
+import { CONTRACT_ABIS, CONTRACT_ADDRESSES, TOKEN_ADDRESSES, resolveTokenAddress, resolveTokenLabel, ensureBaseSepolia, assertAddressFormat } from '../../config/contracts.js';
 import { getTokenBalance, getTokenDecimals } from '../../lib/stellar/contracts/token';
 import { swapTokens } from '../../lib/stellar/contracts/exchange';
 
@@ -192,15 +192,18 @@ export default function SwapBox({
       }
 
       let isStellar = false;
-      let currentAccount = account;
+      let currentAccount = '';
       let provider = null;
       
-      if (stellarAccount) {
+      const sessionStellar = localStorage.getItem('spectra_stellar_wallet');
+      const sessionEVM = localStorage.getItem('spectra_wallet');
+
+      if (sessionStellar) {
         isStellar = true;
-        currentAccount = stellarAccount;
-      } else if (account) {
+        currentAccount = sessionStellar;
+      } else if (sessionEVM) {
         isStellar = false;
-        currentAccount = account;
+        currentAccount = sessionEVM;
         provider = new ethers.BrowserProvider(window.ethereum);
       } else {
         const res = await connectWalletLocal();
@@ -213,6 +216,11 @@ export default function SwapBox({
         // --- STELLAR EXECUTION PATH ---
         const tokenInSAC = resolveSacAddress(activePayAssetMeta.id);
         const tokenOutSAC = resolveSacAddress(activeAssetMeta.id);
+        
+        // PRE-FLIGHT VALIDATION: Prevent cross-contamination
+        if (!tokenInSAC.startsWith('C') || !tokenOutSAC.startsWith('C') || tokenInSAC.length !== 56) {
+          throw new Error('CRITICAL ROUTING ERROR: Stellar session attempted to execute using non-SAC (0x...) token addresses.');
+        }
         
         // Convert input amount based on token decimals
         const decimalsIn = activePayAssetMeta.decimals;
@@ -241,6 +249,15 @@ export default function SwapBox({
         const tokenIn = activePayAssetMeta.tokenAddress;
         const tokenOut = activeAssetMeta.tokenAddress;
         const minAmountOut = 0n;
+
+        // Hard guard: reject immediately if either address is not EVM-format
+        assertAddressFormat(tokenIn, 'evm', activePayAsset);
+        assertAddressFormat(tokenOut, 'evm', activeAsset);
+
+        // PRE-FLIGHT VALIDATION: Prevent cross-contamination
+        if (!tokenIn.startsWith('0x') || !tokenOut.startsWith('0x') || tokenIn.length !== 42) {
+          throw new Error('CRITICAL ROUTING ERROR: EVM session attempted to pass a Soroban Asset Contract (C...) address to UGF Relayer.');
+        }
 
         const iface = new ethers.Interface(CONTRACT_ABIS.SPECTRA_EXCHANGE);
         const encodedData = iface.encodeFunctionData('swap', [

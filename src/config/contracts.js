@@ -1,12 +1,13 @@
 /**
- * Deployed Contract Addresses on Base Sepolia
+ * Deployed Contract Addresses on Base Sepolia.
+ * Source of truth: contracts/scripts/deployed-addresses.json (2026-07-11 redeploy)
  */
 export const CONTRACT_ADDRESSES = {
   TYI: '0x27dc1c167aef232bb1e21073304b526726a8727e',
-  SPECTRA_SAAS: '0xa58ce4bac06e8723bbf45f595f2c8dbc0e021100',
-  SPECTRA_NFT: '0x45935fa416e2fb9c08e784e4b816b29be4d031b3',
-  SPECTRA_EXCHANGE: '0x27aa3d225d062d669279920727a8a1a438f4cd68',
-  SPECTRA_PROFILE: '0x598Ca7A104fa36fb59BB49bC5Ba2813C72978d5b',
+  SPECTRA_SAAS: '0x14363644D607d982C50a3923e12743cCf612AAd9',
+  SPECTRA_NFT: '0x81508e908e61ae372bF4C584A7C09E703C11564C',
+  SPECTRA_EXCHANGE: '0x760635A9B0df697eE91050Bb7d28a923D645e9DC',
+  SPECTRA_PROFILE: '0xCBa9Cd6146D51E49043CB2Fd7Aa76DdF811624d2',
 };
 
 export const NETWORK_INFO = {
@@ -34,6 +35,41 @@ export const TOKEN_SYMBOL_TO_ADDRESS = {
   USDC: TOKEN_ADDRESSES.USDC,
   WBTC: TOKEN_ADDRESSES.WBTC,
 };
+
+/**
+ * Canonical decimal counts per token symbol.
+ * Used by Exchange.jsx quote formatting to avoid wrong-decimal inflation.
+ */
+export const TOKEN_DECIMALS = {
+  TYI: 6,
+  MUSD: 6,
+  USDC: 6,
+  ETH: 18,
+  SEPOLIA_ETH: 18,
+  BASE_SEPOLIA_ETH: 18,
+  WETH: 18,
+  WBTC: 8,
+  XLM: 7,
+};
+
+export function resolveTokenDecimals(symbol) {
+  return TOKEN_DECIMALS[String(symbol || '').toUpperCase()] ?? 18;
+}
+
+/**
+ * Asserts that an address matches its expected network format.
+ * EVM addresses must start with 0x. Soroban/Stellar addresses must start with C.
+ * Throws if there is a cross-chain contamination detected.
+ */
+export function assertAddressFormat(address, expectedNetwork, label = 'token') {
+  if (!address) throw new Error(`${label}: address is undefined`);
+  if (expectedNetwork === 'evm' && !address.startsWith('0x')) {
+    throw new Error(`[Cross-chain mismatch] ${label} address "${address}" is not a valid EVM address (must start with 0x). Aborting.`);
+  }
+  if (expectedNetwork === 'stellar' && !address.startsWith('C')) {
+    throw new Error(`[Cross-chain mismatch] ${label} address "${address}" is not a valid Soroban SAC address (must start with C). Aborting.`);
+  }
+}
 
 export function resolveTokenAddress(symbol) {
   return TOKEN_SYMBOL_TO_ADDRESS[String(symbol || '').toUpperCase()] || TOKEN_ADDRESSES.TYI;

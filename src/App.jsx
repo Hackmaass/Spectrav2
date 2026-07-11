@@ -10,7 +10,8 @@ const Agent    = lazy(() => import('./pages/Agent'));
 const Exchange = lazy(() => import('./pages/Exchange'));
 const Mint     = lazy(() => import('./pages/Mint'));
 const Journal  = lazy(() => import('./pages/Journal'));
-const Admin    = lazy(() => import('./pages/Admin'));
+const AdminLogin = lazy(() => import('./pages/AdminLogin'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const Profile  = lazy(() => import('./pages/ProfileDashboard'));
 const LegalPage = lazy(() => import('./pages/LegalPage'));
 const Login    = lazy(() => import('./pages/Login'));
@@ -52,7 +53,11 @@ export default function App() {
           <Route path="/about"    element={<About />}    />
           <Route path="/exchange" element={<Exchange />} />
           <Route path="/journal"  element={<Journal />}  />
-          <Route path="/admin"    element={<Admin />}    />
+          
+          {/* Secret Admin Routes */}
+          <Route path={`/${import.meta.env.VITE_ADMIN_URL}`} element={<AdminLogin />} />
+          <Route path="/admin-dashboard" element={<AdminDashboard />} />
+
           {/* <Route path="/profile"  element={<Profile />}  /> */}
           <Route path="/legal"    element={<LegalPage />} />
           <Route path="/login"    element={<Login />}    />

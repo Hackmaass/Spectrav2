@@ -57,7 +57,7 @@ const Title = styled.h2`
 
 const ConnectButton = styled.button`
   width: 100%;
-  background: rgba(var(--color-primary-rgb, 0, 85, 255), 0.1);
+  background: black;
   border: 1px solid rgba(var(--color-primary-rgb, 0, 85, 255), 0.3);
   color: #fff;
   padding: 14px;
@@ -69,10 +69,11 @@ const ConnectButton = styled.button`
   align-items: center;
   justify-content: center;
   gap: 10px;
-  transition: all 0.2s;
+  transition: all ease .5s;
 
   &:hover {
-    background: rgba(var(--color-primary-rgb, 0, 85, 255), 0.2);
+    background: white;
+    color: black;
     border-color: var(--color-primary);
     box-shadow: 0 0 16px rgba(var(--color-primary-rgb, 0, 85, 255), 0.2);
   }

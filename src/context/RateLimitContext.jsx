@@ -13,10 +13,11 @@ const LIMITS = {
 const ONE_HOUR_MS = 60 * 60 * 1000;
 
 export function RateLimitProvider({ children }) {
-  const { walletAddress, userTier } = useAuth();
+  const { walletAddress, stellarPublicKey, userTier } = useAuth();
 
   const consumeRequest = useCallback(() => {
-    if (!walletAddress) return false;
+    const activeAddress = walletAddress || stellarPublicKey;
+    if (!activeAddress) return false;
 
     // --- TEST BYPASS ---
     if (localStorage.getItem('spectra_test_bypass') === 'true') {
@@ -24,7 +25,7 @@ export function RateLimitProvider({ children }) {
     }
 
     const limit = LIMITS[userTier] || LIMITS[0];
-    const storageKey = `spectra_ratelimit_${walletAddress}`;
+    const storageKey = `spectra_ratelimit_${activeAddress}`;
     
     let timestamps = [];
     try {
@@ -52,7 +53,7 @@ export function RateLimitProvider({ children }) {
     localStorage.setItem(storageKey, JSON.stringify(timestamps));
     return { allowed: true, limit };
 
-  }, [walletAddress, userTier]);
+  }, [walletAddress, stellarPublicKey, userTier]);
 
   return (
     <RateLimitContext.Provider value={{ consumeRequest }}>

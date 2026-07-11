@@ -25,7 +25,8 @@
     "react-ts-tradingview-widgets": "^1.2.8",
     "sarvamai": "^1.1.7",
     "styled-components": "^6.4.2",
-    "tailwind-merge": "^3.6.0"
+    "tailwind-merge": "^3.6.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

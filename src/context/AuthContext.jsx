@@ -3,6 +3,8 @@ import { ethers } from 'ethers';
 import { useNavigate } from 'react-router-dom';
 import { CONTRACT_ADDRESSES, CONTRACT_ABIS } from '../config/contracts';
 import { connectStellarSnap } from '../lib/stellar/snap';
+import { getProfile } from '../lib/stellar/contracts/profile';
+import { getUserTier as getStellarUserTier } from '../lib/stellar/contracts/saas';
 
 const AuthContext = createContext();
 
@@ -74,6 +76,11 @@ export function AuthProvider({ children }) {
 
   const login = useCallback((address) => {
     const normalized = address.toLowerCase();
+    
+    // Mutual Exclusion: Clear Stellar session
+    localStorage.removeItem('spectra_stellar_wallet');
+    setStellarPublicKey('');
+    
     localStorage.setItem('spectra_wallet', normalized);
     setWalletAddress(normalized);
     setIsLoggedIn(true);
@@ -108,6 +115,10 @@ export function AuthProvider({ children }) {
     try {
       const pubKey = await connectStellarSnap();
       if (pubKey) {
+        // Mutual Exclusion: Clear EVM session
+        localStorage.removeItem('spectra_wallet');
+        setWalletAddress('');
+        
         localStorage.setItem('spectra_stellar_wallet', pubKey);
         setStellarPublicKey(pubKey);
         setIsLoggedIn(true);

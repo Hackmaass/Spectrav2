@@ -64,14 +64,16 @@ impl ExchangeContract {
             return Err(Error::SlippageTooHigh);
         }
 
-        // --- MOCK MODE: Bypass actual token transfers ---
-        // let client_in = token::Client::new(&env, &token_in);
-        // let client_out = token::Client::new(&env, &token_out);
-        // let contract_addr = env.current_contract_address();
+        // --- ACTUAL TOKEN TRANSFERS ---
+        let client_in = token::Client::new(&env, &token_in);
+        let client_out = token::Client::new(&env, &token_out);
+        let contract_addr = env.current_contract_address();
+        
         // 1. Transfer In
-        // client_in.transfer(&user, &contract_addr, &amount_in);
+        client_in.transfer(&user, &contract_addr, &amount_in);
+        
         // 2. Transfer Out
-        // client_out.transfer(&contract_addr, &user, &amount_out);
+        client_out.transfer(&contract_addr, &user, &amount_out);
 
         Ok(amount_out)
     }

@@ -15,23 +15,21 @@ const LoginContainer = styled.div`
 `;
 
 const LoginBox = styled.div`
-  background: rgba(17, 19, 26, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 40px;
-  border-radius: 12px;
-  max-width: 400px;
+  background: blue;
+  border: 1px solid #27272a;
   width: 100%;
-  text-align: center;
-  box-shadow: 0 0 40px rgba(176, 38, 255, 0.1);
+  max-width: 500px;
+  padding: 32px;
+  position: relative;
+  font-family: "Poppins", sans-serif;
+  box-shadow: -12px 12px 0 2px white;
 `;
 
 const Title = styled.h1`
-  font-family: 'Oswald', sans-serif;
-  font-size: 32px;
-  margin-bottom: 12px;
-  background: linear-gradient(90deg, #fff, #b026ff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-size: 50px;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: center;
 `;
 
 const Description = styled.p`
@@ -42,26 +40,26 @@ const Description = styled.p`
 `;
 
 const ConnectBtn = styled.button`
-  background: rgba(176, 38, 255, 0.2);
-  border: 1px solid #b026ff;
-  color: #fff;
-  font-family: 'JetBrains Mono', monospace;
-  font-weight: 700;
-  font-size: 16px;
-  padding: 16px 24px;
   width: 100%;
-  border-radius: 4px;
+  background: black;
+  border: 1px solid rgba(var(--color-primary-rgb, 0, 85, 255), 0.3);
+  color: #fff;
+  padding: 14px;
+  font-family: "Poppins", sans-serif;
+  font-weight: 500;
+  font-size: 16px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    background: rgba(176, 38, 255, 0.3);
-    box-shadow: 0 0 15px rgba(176, 38, 255, 0.4);
-  }
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all ease .5s;
 
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  &:hover {
+    background: white;
+    color: black;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 16px rgba(var(--color-primary-rgb, 0, 85, 255), 0.2);
   }
 `;
 
@@ -119,9 +117,10 @@ export default function Login() {
   return (
     <LoginContainer>
       <LoginBox>
-        <Title>SPECTRA OS</Title>
-        <Description>Authenticate to access the agent ecosystem.</Description>
-        
+        <Title>Login.</Title>
+        <p style={{ margin:"2%",marginBottom:"4%", textAlign: "center" }}>
+             Get Started with your First Swapping Transaction, authenticate now.
+            </p>
         <ConnectBtn onClick={handleConnect} disabled={isConnecting}>
           {isConnecting ? 'CONNECTING...' : 'CONNECT METAMASK'}
         </ConnectBtn>

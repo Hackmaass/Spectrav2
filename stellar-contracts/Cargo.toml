@@ -4,7 +4,8 @@ members = [
     "saas",
     "exchange",
     "profile",
-    "nft"
+    "nft",
+    "feedback"
 ]
 
 [profile.release]

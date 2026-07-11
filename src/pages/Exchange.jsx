@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ethers } from "ethers";
 import SwapBox, { ASSET_OPTIONS } from "../components/exchange/SwapBox";
-import { CONTRACT_ABIS, CONTRACT_ADDRESSES, NETWORK_INFO, TOKEN_ADDRESSES, resolveTokenAddress } from "../config/contracts.js";
+import { CONTRACT_ABIS, CONTRACT_ADDRESSES, NETWORK_INFO, TOKEN_ADDRESSES, resolveTokenAddress, resolveTokenDecimals, assertAddressFormat } from "../config/contracts.js";
 
 const TRADING_VIEW_SYMBOL = {
   TYI: "BINANCE:USDTUSD",
@@ -59,12 +59,18 @@ export default function Exchange() {
           : new ethers.JsonRpcProvider(NETWORK_INFO.rpcUrl);
         const exchange = new ethers.Contract(CONTRACT_ADDRESSES.SPECTRA_EXCHANGE, CONTRACT_ABIS.SPECTRA_EXCHANGE, provider);
         
-        const decimalsIn = payAsset === "ETH" ? 18 : 6;
-        const decimalsOut = selectedAsset === "ETH" ? 18 : 6;
+        // Resolve correct decimals per token — never assume 6 or 18 globally.
+        const decimalsIn = resolveTokenDecimals(payAsset);
+        const decimalsOut = resolveTokenDecimals(selectedAsset);
 
-        const amountIn = ethers.parseUnits(String(parsed), decimalsIn);
         const tokenIn = resolveTokenAddress(payAsset);
         const tokenOut = resolveTokenAddress(selectedAsset);
+        
+        // Hard guard: both addresses must be valid EVM addresses on the EVM path.
+        assertAddressFormat(tokenIn, 'evm', payAsset);
+        assertAddressFormat(tokenOut, 'evm', selectedAsset);
+        
+        const amountIn = ethers.parseUnits(String(parsed), decimalsIn);
         const amountOut = await exchange.getQuote(tokenIn, tokenOut, amountIn);
 
         if (cancelled) {

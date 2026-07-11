@@ -13,6 +13,7 @@ export const CONTRACTS = {
   PROFILE:  import.meta.env.VITE_PROFILE_CONTRACT_ID,
   EXCHANGE: import.meta.env.VITE_EXCHANGE_CONTRACT_ID,
   NFT:      import.meta.env.VITE_NFT_CONTRACT_ID,
+  FEEDBACK: import.meta.env.VITE_STELLAR_FEEDBACK_CONTRACT,
 };
 
 // ─── Simple read-cache: avoid repeat RPC for same key within 60s ──────────────

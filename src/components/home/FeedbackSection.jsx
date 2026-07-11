@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import { saveFeedback } from '../../lib/stellar/contracts/feedback';
 
 const Section = styled.section`
   padding: 96px 24px;
@@ -176,7 +177,8 @@ export default function FeedbackSection() {
     setIsSubmitting(true);
     
     try {
-      const response = await fetch('https://formspree.io/f/xojogwna', {
+      // 1. Submit to Formspree (original)
+      const formPromise = fetch('https://formspree.io/f/xojogwna', {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -187,6 +189,18 @@ export default function FeedbackSection() {
           rating: rating || 'Not rated',
         }),
       });
+      
+      // 2. Submit to Stellar Soroban (gasless)
+      const stellarPromise = saveFeedback(
+        formData.name,
+        formData.email,
+        formData.designation,
+        formData.company,
+        formData.thoughts,
+        rating || 0
+      ).catch(e => console.warn('Stellar save failed:', e));
+
+      const [response] = await Promise.all([formPromise, stellarPromise]);
       
       if (response.ok) {
         setSubmitted(true);
