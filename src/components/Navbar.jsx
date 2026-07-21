@@ -1,110 +1,138 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import styled from 'styled-components';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { ChevronDown, ArrowUpRight, Menu, X } from 'lucide-react';
 import { FaVolumeMute, FaVolumeUp } from 'react-icons/fa';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import WalletSelectorModal from './auth/WalletSelectorModal';
 
-// Exact navigation data structures from Ghost Finance
-const PRODUCTS = [
-  {
-    category: "Individuals",
-    items: [
-      { 
-        name: "Lend", 
-        desc: "Deposit at your own sealed rate. Earn discriminatory yield.", 
-        colors: ["#a78bfa", "#7c3aed", "#c4b5fd"], 
-        link: "https://app.ghost-finance.xyz/" 
-      },
-      { 
-        name: "Borrow", 
-        desc: "Post collateral, set your max rate, get matched to cheapest lenders.", 
-        colors: ["#818cf8", "#4f46e5", "#a5b4fc"], 
-        link: "https://app.ghost-finance.xyz/" 
-      }
-    ]
-  },
-  {
-    category: "Tools",
-    items: [
-      { 
-        name: "Raycast Extension", 
-        desc: "Use Ghost's confidential matching engine from Raycast.", 
-        colors: ["#67e8f9", "#0891b2", "#a5f3fc"], 
-        link: "https://github.com/snehendu098/ghost/tree/main/ghost-raycast" 
-      },
-      { 
-        name: "Telegram Bot", 
-        desc: "Access all of Ghost's features via Telegram.", 
-        colors: ["#86efac", "#16a34a", "#bbf7d0"], 
-        link: "https://t.me/ghostfinancetg_bot" 
-      }
-    ]
-  },
-  {
-    category: "Institutions & Projects",
-    items: [
-      { 
-        name: "Private Pools", 
-        desc: "Institutional-grade private lending pools with custom parameters.", 
-        colors: ["#f0abfc", "#a855f7", "#e9d5ff"], 
-        link: "https://app.ghost-finance.xyz/explore" 
-      }
-    ]
+/* ─── Styled Components for Nav Shell ────────────────────────────────────── */
+
+const NavWrap = styled.nav`
+  position: fixed;
+  top: 3.25%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1.2% 2%;
+  background: var(--bg, #0a0a0b);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 65%;
+  margin: 0 auto;
+  z-index: 50;
+  border-radius: 9999px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+
+  @media (max-width: 1024px) {
+    width: 90%;
   }
+
+  @media (max-width: 768px) {
+    padding: 12px 16px;
+    top: 16px;
+    width: 92%;
+  }
+`;
+
+const NavInner = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  width: 100%;
+  justify-content: space-between;
+`;
+
+const Logo = styled(Link)`
+  font-family: 'Geist', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-primary, #ffffff);
+  text-decoration: none;
+  flex-shrink: 0;
+`;
+
+const NavRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+`;
+
+const ProfileIcon = styled.button`
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: var(--color-primary, #ffffff);
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+`;
+
+const AuthButton = styled.button`
+  background: transparent;
+  border: none;
+  color: var(--color-primary, #ffffff);
+  font-family: 'Geist', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.2s;
+
+  &:hover {
+    color: var(--color-primary, #ffffff);
+    opacity: 0.8;
+  }
+`;
+
+/* ─── INITIAL Nav Data Only (Products & Resources) ───────────────────────── */
+
+const PRODUCTS_DATA = [
+  { to: '/agent',    label: 'Agent',      desc: 'Intent-driven DeFi assistant powered by Sarvam AI.', colors: ['#818cf8', '#4f46e5', '#a5b4fc'] },
+  { to: '/exchange', label: 'Exchange',   desc: 'Cross-chain swaps with optimal routing.',          colors: ['#a78bfa', '#7c3aed', '#c4b5fd'] },
+  { to: '/spectra',  label: 'Spectra AI', desc: '24/7 AI help desk & support center.',              colors: ['#67e8f9', '#0891b2', '#a5f3fc'] },
 ];
 
-const RESOURCES = [
-  { 
-    name: "Blog", 
-    desc: "Protocol updates and research insights.", 
-    colors: ["#fbbf24", "#d97706", "#fde68a"], 
-    link: "https://docs.ghost-finance.xyz/" 
-  },
-  { 
-    name: "Documentation", 
-    desc: "Protocol architecture & integration guides.", 
-    colors: ["#a78bfa", "#7c3aed", "#c4b5fd"], 
-    link: "https://docs.ghost-finance.xyz/" 
-  },
-  { 
-    name: "Litepaper", 
-    desc: "Read the Ghost protocol litepaper.", 
-    colors: ["#f472b6", "#db2777", "#fbcfe8"], 
-    link: "https://docs.ghost-finance.xyz/" 
-  }
+const RESOURCES_DATA = [
+  { to: '/guide',    label: 'Guide',      desc: 'Interactive documentation & tutorials.',            colors: ['#fbbf24', '#d97706', '#fde68a'] },
+  { to: '/journal',  label: 'Journal',    desc: 'Execution logs & protocol research.',               colors: ['#86efac', '#16a34a', '#bbf7d0'] },
+  { to: '/about',    label: 'About',      desc: 'Architecture overview & mission statement.',        colors: ['#f472b6', '#db2777', '#fbcfe8'] },
 ];
 
-const TOKENS = [
-  { 
-    name: "$gUSD", 
-    desc: "Privacy-preserving stablecoin for lending and borrowing.", 
-    colors: ["#34d399", "#059669", "#a7f3d0"], 
-    link: "https://docs.ghost-finance.xyz/protocol/tokenomics" 
-  },
-  { 
-    name: "$gETH", 
-    desc: "Shielded ETH for collateral and private transfers.", 
-    colors: ["#60a5fa", "#2563eb", "#bfdbfe"], 
-    link: "https://docs.ghost-finance.xyz/protocol/tokenomics" 
-  }
-];
-
-const NAV_TABS = ["Products", "Resources", "Tokens"];
+const NAV_TABS = ["Products", "Resources"];
 
 function getTabItems(tab) {
   switch (tab) {
     case "Products":
-      return PRODUCTS.flatMap(cat => cat.items);
+      return PRODUCTS_DATA;
     case "Resources":
-      return RESOURCES;
-    case "Tokens":
-      return TOKENS;
+      return RESOURCES_DATA;
     default:
       return [];
   }
 }
 
-// Exact spring transitions from Ghost Finance
+/* ─── Ghost Finance Spring Animations & Morph Card ───────────────────────── */
+
 const springVisual = { type: "spring", stiffness: 350, damping: 20, mass: 0.7 };
 const smoothSpring = { type: "spring", stiffness: 400, damping: 28 };
 
@@ -161,13 +189,12 @@ function NavVisual({ colors }) {
   );
 }
 
-function NavItem({ item, layoutScope, isHovered, onHover }) {
+function NavItem({ item, layoutScope, isHovered, onHover, onClick }) {
   return (
-    <a
-      href={item.link}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="relative flex items-center justify-between px-4 py-3 rounded-xl group"
+    <Link
+      to={item.to}
+      onClick={onClick}
+      className="relative flex items-center justify-between px-4 py-3 rounded-xl group cursor-pointer"
       onMouseEnter={onHover}
     >
       {isHovered && (
@@ -178,22 +205,15 @@ function NavItem({ item, layoutScope, isHovered, onHover }) {
         />
       )}
       <div className="min-w-0 relative z-10">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-white">{item.name}</span>
-          {item.badge && (
-            <span className="text-[10px] font-bold bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded-md">
-              {item.badge}
-            </span>
-          )}
-        </div>
+        <span className="text-sm font-semibold text-white block">{item.label}</span>
         <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>
       </div>
-      <ArrowUpRight className="w-3.5 h-3.5 text-gray-600 shrink-0 ml-3 relative z-10 group-hover:text-gray-400 transition-colors" />
-    </a>
+      <ArrowUpRight className="w-3.5 h-3.5 text-gray-600 shrink-0 ml-3 relative z-10 group-hover:text-gray-300 transition-colors" />
+    </Link>
   );
 }
 
-function NavDropdown({ tab, hoveredIdx, setHoveredIdx }) {
+function DropdownMenu({ tab, hoveredIdx, setHoveredIdx, onItemClick }) {
   const items = getTabItems(tab);
   const activeColors = items[hoveredIdx]?.colors || items[0]?.colors || ["#333", "#555", "#777"];
 
@@ -204,49 +224,27 @@ function NavDropdown({ tab, hoveredIdx, setHoveredIdx }) {
       exit={{ opacity: 0, y: -8 }}
       transition={{ type: "spring", stiffness: 500, damping: 35 }}
       className="flex rounded-2xl shadow-[0_20px_60px_-10px_rgba(0,0,0,0.6)] border border-white/10 bg-[#1a1a1a] overflow-hidden"
-      style={{ width: items.length > 3 ? 580 : 520 }}
+      style={{ width: 480 }}
     >
       <LayoutGroup id={tab}>
         <div className="flex-1 py-4 px-2 min-w-0">
-          {tab === "Products" ? (
-            PRODUCTS.map((cat, catIdx) => {
-              const allProducts = getTabItems("Products");
-              return (
-                <div key={cat.category}>
-                  {catIdx > 0 && <div className="h-px bg-white/5 mx-3 my-2" />}
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-gray-500 px-4 mb-1 mt-1">
-                    {cat.category}
-                  </p>
-                  {cat.items.map((item) => {
-                    const idx = allProducts.findIndex(p => p.name === item.name);
-                    return (
-                      <NavItem
-                        key={item.name}
-                        item={item}
-                        layoutScope={tab}
-                        isHovered={hoveredIdx === idx}
-                        onHover={() => setHoveredIdx(idx)}
-                      />
-                    );
-                  })}
-                </div>
-              );
-            })
-          ) : (
-            items.map((item, idx) => (
-              <NavItem
-                key={item.name}
-                item={item}
-                layoutScope={tab}
-                isHovered={hoveredIdx === idx}
-                onHover={() => setHoveredIdx(idx)}
-              />
-            ))
-          )}
+          <p className="text-[10px] uppercase tracking-wider font-semibold text-gray-500 px-4 mb-1 mt-1">
+            {tab}
+          </p>
+          {items.map((item, idx) => (
+            <NavItem
+              key={item.to}
+              item={item}
+              layoutScope={tab}
+              isHovered={hoveredIdx === idx}
+              onHover={() => setHoveredIdx(idx)}
+              onClick={onItemClick}
+            />
+          ))}
         </div>
       </LayoutGroup>
 
-      <div className="w-[220px] p-3 shrink-0">
+      <div className="w-[190px] p-3 shrink-0">
         <AnimatePresence mode="wait">
           <NavVisual key={`${tab}-${hoveredIdx}`} colors={activeColors} />
         </AnimatePresence>
@@ -255,19 +253,20 @@ function NavDropdown({ tab, hoveredIdx, setHoveredIdx }) {
   );
 }
 
+/* ─── Main Navbar Component ───────────────────────────────────────────────── */
+
 export default function Navbar() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const {
-    stellarPublicKey: stellarAddress,
-    connectWallet,
-    disconnect,
-    profile,
-    isNewUser,
-    isLoadingProfile
+    isLoggedIn,
+    disconnectWallet
   } = useAuth();
 
   const [activeTab, setActiveTab] = useState(null);
   const [hoveredIdx, setHoveredIdx] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const timeoutRef = useRef(null);
 
   const [isMuted, setIsMuted] = useState(true);
@@ -275,7 +274,7 @@ export default function Navbar() {
 
   useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.volume = 0.225;
+      audioRef.current.volume = 0.3;
       audioRef.current.play().then(() => {
         setIsMuted(false);
         audioRef.current.muted = false;
@@ -301,14 +300,6 @@ export default function Navbar() {
     }
   };
 
-  const handleConnect = async () => {
-    if (!window.freighterApi) {
-      window.open('https://www.freighter.app/', '_blank');
-      return;
-    }
-    await connectWallet('stellar');
-  };
-
   const handleTabHover = useCallback((tab) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     setActiveTab(prev => {
@@ -327,195 +318,151 @@ export default function Navbar() {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
   }, []);
 
-  const renderActionButton = () => {
-    if (!window.freighterApi) {
-      return (
-        <button
-          onClick={handleConnect}
-          className="px-5 py-2 text-gray-900 text-sm font-semibold rounded-full hover:opacity-90 transition-opacity shadow-md"
-          style={{ backgroundColor: "#e2a9f1" }}
-        >
-          Install Freighter
-        </button>
-      );
+  const handleItemClick = useCallback(() => {
+    setActiveTab(null);
+  }, []);
+
+  const handleLogout = () => {
+    disconnectWallet();
+  };
+
+  const userData = { avatarId: 1 };
+
+  const handleProfileClick = () => {
+    if (isLoggedIn) {
+      navigate('/profile');
+    } else {
+      setIsWalletModalOpen(true);
     }
-
-    if (isLoadingProfile) {
-      return (
-        <button 
-          disabled 
-          className="px-5 py-2 text-gray-900 text-sm font-semibold rounded-full flex items-center gap-2 opacity-80 cursor-not-allowed"
-          style={{ backgroundColor: "#e2a9f1" }}
-        >
-          <svg className="animate-spin h-4 w-4 text-gray-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          Syncing...
-        </button>
-      );
-    }
-
-    if (!stellarAddress) {
-      return (
-        <button
-          onClick={handleConnect}
-          className="px-5 py-2 text-gray-900 text-sm font-semibold rounded-full hover:opacity-90 transition-opacity shadow-md"
-          style={{ backgroundColor: "#e2a9f1" }}
-        >
-          Connect Wallet
-        </button>
-      );
-    }
-
-    if (isNewUser && !profile) {
-      return (
-        <div className="flex items-center gap-3">
-          <span className="text-orange-400 font-medium text-xs hidden sm:inline">Action Required:</span>
-          <button
-            onClick={() => window.location.href = '/mint'}
-            className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-full shadow-lg transition-transform transform hover:scale-105 text-sm"
-          >
-            Mint NFT
-          </button>
-          <button onClick={disconnect} className="text-gray-400 hover:text-white text-xs underline">
-            Disconnect
-          </button>
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex items-center gap-3 bg-white/[0.06] border border-white/10 px-3 py-1.5 rounded-full">
-        <div className="flex flex-col items-end leading-tight">
-          <span className="text-gray-200 font-medium text-xs">
-            {profile?.name || 'Spectra User'}
-          </span>
-          <span className="text-[10px] text-indigo-300 font-mono">
-            {stellarAddress.substring(0, 4)}...{stellarAddress.substring(stellarAddress.length - 4)}
-          </span>
-        </div>
-
-        {profile?.tier && (
-          <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
-            profile.tier === 'Gold' ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30' :
-            profile.tier === 'Silver' ? 'bg-gray-400/20 text-gray-300 border border-gray-400/30' :
-            profile.tier === 'Bronze' ? 'bg-orange-700/20 text-orange-400 border border-orange-700/30' :
-            'bg-indigo-500/20 text-indigo-300'
-          }`}>
-            {profile.tier}
-          </span>
-        )}
-
-        <button
-          onClick={disconnect}
-          className="p-1 text-gray-400 hover:text-red-400 rounded-full transition-colors"
-          title="Sign Out"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-        </button>
-      </div>
-    );
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-transparent backdrop-blur-md">
-      <audio ref={audioRef} src="/aud.mp3" loop autoPlay />
+    <>
+      <NavWrap>
+        <NavInner>
+          {/* Brand Logo */}
+          <Logo to="/">SPECTRA</Logo>
 
-      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        {/* Logo / Brand */}
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.location.href = '/'}>
-          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-            <span className="text-white font-bold text-lg">S</span>
-          </div>
-          <span className="text-white font-bold text-lg tracking-tight hidden sm:block">Spectra</span>
-        </div>
-
-        {/* Center Nav Dropdowns */}
-        <div className="hidden md:flex flex-col items-center relative">
-          <div className="flex items-center gap-0.5" onMouseLeave={handleTabLeave}>
-            {NAV_TABS.map(tab => (
-              <button
-                key={tab}
-                onMouseEnter={() => handleTabHover(tab)}
-                className={`relative flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full transition-colors duration-150 ${
-                  activeTab === tab ? "text-white" : "text-gray-400 hover:text-white"
+          {/* Nav Items: Home, Products ▾, Resources ▾, Pricing */}
+          <div className="hidden md:flex flex-col items-center relative">
+            <div className="flex items-center gap-6" onMouseLeave={handleTabLeave}>
+              <Link
+                to="/"
+                onMouseEnter={() => {
+                  if (timeoutRef.current) clearTimeout(timeoutRef.current);
+                  setActiveTab(null);
+                }}
+                className={`px-4 py-2 text-sm font-medium rounded-full transition-colors duration-150 ${
+                  location.pathname === '/' ? "text-white" : "text-gray-400 hover:text-white"
                 }`}
               >
-                {activeTab === tab && (
-                  <motion.div
-                    layoutId="tab-pill"
-                    className="absolute inset-0 bg-white/10 rounded-full"
-                    transition={smoothSpring}
-                  />
-                )}
-                <span className="relative z-10">{tab}</span>
-                <ChevronDown
-                  className={`w-3.5 h-3.5 relative z-10 transition-transform duration-200 ${
-                    activeTab === tab ? "rotate-180" : ""
+                Home
+              </Link>
+
+              {NAV_TABS.map(tab => (
+                <button
+                  key={tab}
+                  onMouseEnter={() => handleTabHover(tab)}
+                  className={`relative flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full transition-colors duration-150 cursor-pointer ${
+                    activeTab === tab ? "text-white" : "text-gray-400 hover:text-white"
                   }`}
-                />
-              </button>
-            ))}
-
-            <a
-              href="https://tattered-elm-7ca.notion.site/Careers-at-Ghost-Finance-31c9eec45dff80b8989fdf81a7373b12"
-              target="_blank"
-              rel="noopener noreferrer"
-              onMouseEnter={() => {
-                if (timeoutRef.current) clearTimeout(timeoutRef.current);
-                setActiveTab(null);
-              }}
-              className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white rounded-full transition-colors duration-150"
-            >
-              Careers
-            </a>
-          </div>
-
-          <AnimatePresence>
-            {activeTab && (
-              <div
-                className="absolute top-full pt-3 z-50"
-                onMouseEnter={handleFlyoutEnter}
-                onMouseLeave={handleTabLeave}
-              >
-                <AnimatePresence mode="wait">
-                  <NavDropdown
-                    key={activeTab}
-                    tab={activeTab}
-                    hoveredIdx={hoveredIdx}
-                    setHoveredIdx={setHoveredIdx}
+                >
+                  {activeTab === tab && (
+                    <motion.div
+                      layoutId="tab-pill"
+                      className="absolute inset-0 bg-white/10 rounded-full"
+                      transition={smoothSpring}
+                    />
+                  )}
+                  <span className="relative z-10">{tab}</span>
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 relative z-10 transition-transform duration-200 ${
+                      activeTab === tab ? "rotate-180" : ""
+                    }`}
                   />
-                </AnimatePresence>
-              </div>
-            )}
-          </AnimatePresence>
-        </div>
+                </button>
+              ))}
 
-        {/* Action Button & Audio Toggle */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={toggleMute}
-            className="text-gray-300 hover:text-white transition-colors p-2"
-            title={isMuted ? "Play Music" : "Mute Music"}
-          >
-            {isMuted ? <FaVolumeMute size={18} /> : <FaVolumeUp size={18} />}
-          </button>
+              <Link
+                to="/mint"
+                onMouseEnter={() => {
+                  if (timeoutRef.current) clearTimeout(timeoutRef.current);
+                  setActiveTab(null);
+                }}
+                className={`px-4 py-2 text-sm font-medium rounded-full transition-colors duration-150 ${
+                  location.pathname === '/mint' ? "text-white" : "text-gray-400 hover:text-white"
+                }`}
+              >
+                Pricing
+              </Link>
+            </div>
 
-          <div className="hidden md:block">
-            {renderActionButton()}
+            {/* Dropdown Menu flyout */}
+            <AnimatePresence>
+              {activeTab && (
+                <div
+                  className="absolute top-full pt-3 z-50"
+                  onMouseEnter={handleFlyoutEnter}
+                  onMouseLeave={handleTabLeave}
+                >
+                  <AnimatePresence mode="wait">
+                    <DropdownMenu
+                      key={activeTab}
+                      tab={activeTab}
+                      hoveredIdx={hoveredIdx}
+                      setHoveredIdx={setHoveredIdx}
+                      onItemClick={handleItemClick}
+                    />
+                  </AnimatePresence>
+                </div>
+              )}
+            </AnimatePresence>
           </div>
 
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 text-gray-400 hover:text-white"
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-        </div>
-      </div>
+          {/* Right Section */}
+          <NavRight>
+            <audio ref={audioRef} src="/aud.mp3" loop />
+            <button 
+              onClick={toggleMute} 
+              title={isMuted ? "Play Music" : "Mute Music"}
+              style={{ 
+                background: 'transparent', 
+                border: 'none', 
+                color: isMuted ? 'var(--color-secondary)' : 'var(--color-primary)', 
+                cursor: 'pointer', 
+                display: 'flex', 
+                alignItems: 'center',
+                padding: '4px'
+              }}
+            >
+              {isMuted ? <FaVolumeMute size={18} /> : <FaVolumeUp size={18} />}
+            </button>
+            
+            {isLoggedIn ? (
+              <>
+                <ProfileIcon onClick={handleProfileClick} title="Go to Profile">
+                  <img
+                    src={`/profile/${userData.avatarId}.png`}
+                    alt="Profile"
+                    onError={(e) => { e.target.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + userData.avatarId; }}
+                  />
+                </ProfileIcon>
+                <AuthButton onClick={handleLogout}>Sign Out</AuthButton>
+              </>
+            ) : (
+              <AuthButton onClick={() => setIsWalletModalOpen(true)}>Connect</AuthButton>
+            )}
+
+            {/* Mobile Hamburger Toggle */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-1.5 text-gray-400 hover:text-white cursor-pointer"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </NavRight>
+        </NavInner>
+      </NavWrap>
 
       {/* Mobile Drawer */}
       <AnimatePresence>
@@ -525,21 +472,31 @@ export default function Navbar() {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="md:hidden bg-[#1a1a1a] border-t border-white/[0.06] overflow-hidden"
+            className="md:hidden fixed top-20 left-1/2 -translate-x-1/2 w-[90%] z-50 bg-[#1a1a1a] border border-white/10 rounded-2xl overflow-hidden shadow-2xl"
           >
-            <div className="p-6 space-y-4">
-              <a href="#" className="block text-sm font-medium py-1.5 text-gray-300 hover:text-white">Products</a>
-              <a href="#" className="block text-sm font-medium py-1.5 text-gray-300 hover:text-white">Resources</a>
-              <a href="#" className="block text-sm font-medium py-1.5 text-gray-300 hover:text-white">Tokens</a>
-              <a href="https://tattered-elm-7ca.notion.site/Careers-at-Ghost-Finance-31c9eec45dff80b8989fdf81a7373b12" target="_blank" rel="noopener noreferrer" className="block text-sm font-medium py-1.5 text-gray-300 hover:text-white">Careers</a>
+            <div className="p-5 space-y-3">
+              <Link to="/" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-medium py-1.5 text-gray-300 hover:text-white">Home</Link>
+              <Link to="/exchange" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-medium py-1.5 text-gray-300 hover:text-white">Exchange</Link>
+              <Link to="/agent" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-medium py-1.5 text-gray-300 hover:text-white">Agent</Link>
+              <Link to="/mint" onClick={() => setMobileMenuOpen(false)} className="block text-sm font-medium py-1.5 text-gray-300 hover:text-white">Pricing</Link>
               
-              <div className="pt-2 border-t border-white/10">
-                {renderActionButton()}
+              <div className="pt-2 border-t border-white/10 flex justify-between items-center">
+                {isLoggedIn ? (
+                  <AuthButton onClick={handleLogout}>Sign Out</AuthButton>
+                ) : (
+                  <AuthButton onClick={() => { setMobileMenuOpen(false); setIsWalletModalOpen(true); }}>Connect</AuthButton>
+                )}
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </nav>
+
+      {/* Wallet Selector Modal */}
+      <WalletSelectorModal 
+        isOpen={isWalletModalOpen} 
+        onClose={() => setIsWalletModalOpen(false)} 
+      />
+    </>
   );
 }
