@@ -127,19 +127,7 @@ button.sc-jOpzPJ.fNXlBM {
   min-height: 0;
 }
 
-nav.sc-jSppWd.khDhFc {
-  border: blue 1px solid;
-  border-radius: 4rem;
-}
-
-div#hero-spline {
-  z-index: 9;
-}
-
-nav {
-  border-radius: 5rem;
-  border: blue 1px solid;
-}
+/* Clean nav styling */
 
 .sc-kmQJWH.haoOn {
   box-shadow: -9px 9px 0 7px blue;
