@@ -131,7 +131,7 @@ function getTabItems(tab) {
   }
 }
 
-/* ─── Ghost Finance Spring Animations & Morph Card ───────────────────────── */
+/* ─── Dropdown Animations & Visual Card ───────────────────────────────────── */
 
 const springVisual = { type: "spring", stiffness: 350, damping: 20, mass: 0.7 };
 const smoothSpring = { type: "spring", stiffness: 400, damping: 28 };
@@ -139,47 +139,58 @@ const smoothSpring = { type: "spring", stiffness: 400, damping: 28 };
 function NavVisual({ colors }) {
   return (
     <motion.div
-      className="w-full h-full rounded-2xl overflow-hidden relative"
-      style={{ background: colors[0] }}
+      style={{
+        width: '100%',
+        height: '100%',
+        borderRadius: '16px',
+        overflow: 'hidden',
+        position: 'relative',
+        background: colors[0],
+      }}
       initial={{ opacity: 0, scale: 0.88, rotate: -3 }}
       animate={{ opacity: 1, scale: 1, rotate: 0 }}
       exit={{ opacity: 0, scale: 0.88, rotate: 3 }}
       transition={springVisual}
     >
+      {/* Large circle — bottom right */}
       <motion.div
-        className="absolute rounded-full"
         style={{
-          width: "70%",
-          height: "70%",
+          position: 'absolute',
+          width: '70%',
+          height: '70%',
+          borderRadius: '50%',
           background: colors[1],
-          right: "-10%",
-          bottom: "-10%"
+          right: '-10%',
+          bottom: '-10%',
         }}
         initial={{ scale: 0.5, opacity: 0, y: 30 }}
         animate={{ scale: 1, opacity: 0.7, y: 0 }}
         transition={{ ...springVisual, delay: 0.04 }}
       />
+      {/* Small circle — accent */}
       <motion.div
-        className="absolute rounded-full"
         style={{
-          width: "45%",
-          height: "45%",
+          position: 'absolute',
+          width: '45%',
+          height: '45%',
+          borderRadius: '50%',
           background: colors[2],
-          right: "5%",
-          bottom: "5%"
+          right: '5%',
+          bottom: '5%',
         }}
         initial={{ scale: 0.3, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 0.6, y: 0 }}
         transition={{ ...springVisual, delay: 0.08 }}
       />
+      {/* Vertical gradient bar */}
       <motion.div
-        className="absolute"
         style={{
-          width: "40%",
-          height: "100%",
+          position: 'absolute',
+          width: '40%',
+          height: '100%',
           background: `linear-gradient(180deg, ${colors[1]}88, ${colors[2]}44)`,
-          left: "30%",
-          top: 0
+          left: '30%',
+          top: 0,
         }}
         initial={{ opacity: 0, x: -30, scaleY: 0.8 }}
         animate={{ opacity: 0.5, x: 0, scaleY: 1 }}
@@ -194,28 +205,74 @@ function NavItem({ item, layoutScope, isHovered, onHover, onClick }) {
     <Link
       to={item.to}
       onClick={onClick}
-      className="relative flex items-center justify-between px-4 py-3 rounded-xl group cursor-pointer"
       onMouseEnter={onHover}
+      style={{
+        textDecoration: 'none',
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '14px 16px',
+        borderRadius: '12px',
+        cursor: 'pointer',
+      }}
     >
+      {/* Animated hover highlight */}
       {isHovered && (
         <motion.div
           layoutId={`nav-highlight-${layoutScope}`}
-          className="absolute inset-0 bg-white/[0.06] rounded-xl"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: '12px',
+            background: 'rgba(255, 255, 255, 0.06)',
+          }}
           transition={smoothSpring}
         />
       )}
-      <div className="min-w-0 relative z-10">
-        <span className="text-sm font-semibold text-white block">{item.label}</span>
-        <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>
+      <div style={{ minWidth: 0, position: 'relative', zIndex: 1 }}>
+        <span
+          style={{
+            display: 'block',
+            fontSize: '14px',
+            fontWeight: 700,
+            color: '#ffffff',
+            fontFamily: "'Geist', sans-serif",
+          }}
+        >
+          {item.label}
+        </span>
+        <span
+          style={{
+            display: 'block',
+            fontSize: '12px',
+            color: 'rgba(255, 255, 255, 0.4)',
+            marginTop: '3px',
+            lineHeight: 1.4,
+            fontFamily: "'Geist', sans-serif",
+          }}
+        >
+          {item.desc}
+        </span>
       </div>
-      <ArrowUpRight className="w-3.5 h-3.5 text-gray-600 shrink-0 ml-3 relative z-10 group-hover:text-gray-300 transition-colors" />
+      <ArrowUpRight
+        style={{
+          width: '14px',
+          height: '14px',
+          color: 'rgba(255, 255, 255, 0.25)',
+          flexShrink: 0,
+          marginLeft: '12px',
+          position: 'relative',
+          zIndex: 1,
+        }}
+      />
     </Link>
   );
 }
 
 function DropdownMenu({ tab, hoveredIdx, setHoveredIdx, onItemClick }) {
   const items = getTabItems(tab);
-  const activeColors = items[hoveredIdx]?.colors || items[0]?.colors || ["#333", "#555", "#777"];
+  const activeColors = items[hoveredIdx]?.colors || items[0]?.colors || ['#333', '#555', '#777'];
 
   return (
     <motion.div
@@ -223,14 +280,19 @@ function DropdownMenu({ tab, hoveredIdx, setHoveredIdx, onItemClick }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ type: "spring", stiffness: 500, damping: 35 }}
-      className="flex rounded-2xl shadow-[0_20px_60px_-10px_rgba(0,0,0,0.6)] border border-white/10 bg-[#1a1a1a] overflow-hidden"
-      style={{ width: 480 }}
+      style={{
+        display: 'flex',
+        width: '540px',
+        borderRadius: '20px',
+        background: '#141414',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        boxShadow: '0 24px 64px -12px rgba(0, 0, 0, 0.6)',
+        overflow: 'hidden',
+      }}
     >
+      {/* Left — Items */}
       <LayoutGroup id={tab}>
-        <div className="flex-1 py-4 px-2 min-w-0">
-          <p className="text-[10px] uppercase tracking-wider font-semibold text-gray-500 px-4 mb-1 mt-1">
-            {tab}
-          </p>
+        <div style={{ flex: 1, padding: '12px 8px', minWidth: 0 }}>
           {items.map((item, idx) => (
             <NavItem
               key={item.to}
@@ -244,7 +306,8 @@ function DropdownMenu({ tab, hoveredIdx, setHoveredIdx, onItemClick }) {
         </div>
       </LayoutGroup>
 
-      <div className="w-[190px] p-3 shrink-0">
+      {/* Right — Visual Card */}
+      <div style={{ width: '210px', padding: '12px 12px 12px 0', flexShrink: 0 }}>
         <AnimatePresence mode="wait">
           <NavVisual key={`${tab}-${hoveredIdx}`} colors={activeColors} />
         </AnimatePresence>
@@ -398,22 +461,20 @@ export default function Navbar() {
             </div>
 
             {/* Dropdown Menu flyout */}
-            <AnimatePresence>
+            <AnimatePresence mode="popLayout">
               {activeTab && (
                 <div
+                  key={activeTab}
                   className="absolute top-full pt-3 z-50"
                   onMouseEnter={handleFlyoutEnter}
                   onMouseLeave={handleTabLeave}
                 >
-                  <AnimatePresence mode="wait">
-                    <DropdownMenu
-                      key={activeTab}
-                      tab={activeTab}
-                      hoveredIdx={hoveredIdx}
-                      setHoveredIdx={setHoveredIdx}
-                      onItemClick={handleItemClick}
-                    />
-                  </AnimatePresence>
+                  <DropdownMenu
+                    tab={activeTab}
+                    hoveredIdx={hoveredIdx}
+                    setHoveredIdx={setHoveredIdx}
+                    onItemClick={handleItemClick}
+                  />
                 </div>
               )}
             </AnimatePresence>
